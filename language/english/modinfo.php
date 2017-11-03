@@ -180,7 +180,10 @@ define('_MI_NEWS_SHOWICONS_PDF_DSC', 'Display PDF icon at the bottom of each art
 define('_MI_DISPLAYTOPIC_TITLE', 'Display Topic with news_title');
 define('_MI_DISPLAYTOPIC_TITLEDSC', 'display Topic title link right before the news title');
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> b7a31449b10a2008e88e7cdf1684b0b98311e444
 //1.72
 //Help
 define('_MI_NEWS_DIRNAME', basename(dirname(dirname(__DIR__))));
@@ -194,4 +197,7 @@ define('_MI_NEWS_OVERVIEW', 'Overview');
 define('_MI_NEWS_DISCLAIMER', 'Disclaimer');
 define('_MI_NEWS_LICENSE', 'License');
 define('_MI_NEWS_SUPPORT', 'Support');
+<<<<<<< HEAD
 >>>>>>> 009c27739663308a7fa06b465f5e63feb974f9b0
+=======
+>>>>>>> b7a31449b10a2008e88e7cdf1684b0b98311e444
