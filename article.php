@@ -517,26 +517,16 @@ if (!is_object($GLOBALS['xoopsUser']) && 0 == $xoopsModuleConfig['show_pdficon']
     $canPdf = 0;
 }
 $xoopsTpl->assign('showPdfIcon', $canPdf);
-
-<<<<<<< HEAD
-<<<<<<< HEAD
 		
 if (news_getmoduleoption('displaytopictitle') == 1) {
        $xoopsTpl->assign('displaytopictitle',true);
 } else {
        $xoopsTpl->assign('displaytopictitle',false);
-=======
-=======
-
->>>>>>> b7a31449b10a2008e88e7cdf1684b0b98311e444
+}
 if (1 == NewsUtility::getModuleOption('displaytopictitle')) {
     $xoopsTpl->assign('displaytopictitle', true);
 } else {
     $xoopsTpl->assign('displaytopictitle', false);
-<<<<<<< HEAD
->>>>>>> 009c27739663308a7fa06b465f5e63feb974f9b0
-=======
->>>>>>> b7a31449b10a2008e88e7cdf1684b0b98311e444
 }
 
 //Add style css
