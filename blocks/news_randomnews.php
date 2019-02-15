@@ -17,9 +17,12 @@
  * @author         XOOPS Development Team
  */
 
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
 
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+use XoopsModules\News;
+
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
+
+// require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
 
 /**
  * @param $options
@@ -28,15 +31,14 @@ require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
  */
 function b_news_randomnews_show($options)
 {
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
-    $myts          = MyTextSanitizer::getInstance();
+    $myts          = \MyTextSanitizer::getInstance();
     $block         = [];
     $block['sort'] = $options[0];
 
-    $tmpstory   = new NewsStory;
-    $restricted = NewsUtility::getModuleOption('restrictindex');
-    $dateformat = NewsUtility::getModuleOption('dateformat');
-    $infotips   = NewsUtility::getModuleOption('infotips');
+    $tmpstory   = new \XoopsModules\News\NewsStory;
+    $restricted = News\Utility::getModuleOption('restrictindex');
+    $dateformat = News\Utility::getModuleOption('dateformat');
+    $infotips   = News\Utility::getModuleOption('infotips');
     if ('' == $dateformat) {
         $dateformat = 's';
     }
@@ -70,12 +72,12 @@ function b_news_randomnews_show($options)
 
         if ($options[3] > 0) {
             $html             = 1 == $story->nohtml() ? 0 : 1;
-            $news['teaser']   = NewsUtility::truncateTagSafe($myts->displayTarea($story->hometext, $html), $options[3] + 3);
+            $news['teaser']   = News\Utility::truncateTagSafe($myts->displayTarea($story->hometext, $html), $options[3] + 3);
             $news['infotips'] = ' title="' . $story->title() . '"';
         } else {
             $news['teaser'] = '';
             if ($infotips > 0) {
-                $news['infotips'] = ' title="' . NewsUtility::makeInfotips($story->hometext()) . '"';
+                $news['infotips'] = ' title="' . News\Utility::makeInfotips($story->hometext()) . '"';
             } else {
                 $news['infotips'] = ' title="' . $story->title() . '"';
             }
@@ -121,8 +123,8 @@ function b_news_randomnews_edit($options)
     $form .= _MB_NEWS_TEASER . " <input type='text' name='options[]' value='" . $options[3] . "'>" . _MB_NEWS_LENGTH;
     $form .= '<br><br>' . _MB_SPOTLIGHT_TOPIC . "<br><select id='options[4]' name='options[]' multiple='multiple'>";
 
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/xoopsstory.php';
-    $xt                    = new MyXoopsTopic($xoopsDB->prefix('news_topics'));
+    // require_once XOOPS_ROOT_PATH . '/modules/news/class/xoopsstory.php';
+    $xt                    = new \XoopsModules\News\XoopsTopic($xoopsDB->prefix('news_topics'));
     $alltopics             = $xt->getTopicsList();
     $alltopics[0]['title'] = _MB_SPOTLIGHT_ALL_TOPICS;
     ksort($alltopics);
@@ -149,7 +151,7 @@ function b_news_randomnews_onthefly($options)
     $options = explode('|', $options);
     $block   = &b_news_randomnews_show($options);
 
-    $tpl = new XoopsTpl();
+    $tpl = new \XoopsTpl();
     $tpl->assign('block', $block);
     $tpl->display('db:news_block_moderate.tpl');
 }

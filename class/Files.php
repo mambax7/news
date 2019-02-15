@@ -1,4 +1,5 @@
-<?php
+<?php namespace XoopsModules\News;
+
 /*
  * You may not change or alter any portion of this comment or credits
  * of supporting developers from this source code or any supporting source code
@@ -17,14 +18,14 @@
  * @author         XOOPS Development Team
  */
 
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.mimetype.php';
+// require_once XOOPS_ROOT_PATH . '/modules/news/class/Mimetype.php';
 
 /**
- * Class sFiles
+ * Class Files
  */
-class sFiles
+class Files
 {
     public $db;
     public $table;
@@ -41,7 +42,8 @@ class sFiles
      */
     public function __construct($fileid = -1)
     {
-        $this->db           = XoopsDatabaseFactory::getDatabaseConnection();
+        /** @var \XoopsMySQLDatabase $db */
+        $this->db           = \XoopsDatabaseFactory::getDatabaseConnection();
         $this->table        = $this->db->prefix('news_stories_files');
         $this->storyid      = 0;
         $this->filerealname = '';
@@ -51,7 +53,7 @@ class sFiles
         $this->counter      = 0;
         if (is_array($fileid)) {
             $this->makeFile($fileid);
-        } elseif ($fileid != -1) {
+        } elseif (-1 != $fileid) {
             $this->getFile((int)$fileid);
         }
     }
@@ -77,7 +79,7 @@ class sFiles
             $ipbits = explode('.', $_SERVER['REMOTE_ADDR']);
             list($usec, $sec) = explode(' ', microtime());
 
-            $usec = (integer)($usec * 65536);
+            $usec *= 65536;
             $sec  = ((integer)$sec) & 0xFFFF;
 
             if ($trimname) {
@@ -100,7 +102,7 @@ class sFiles
      */
     public function giveMimetype($filename = '')
     {
-        $cmimetype   = new cmimetype();
+        $cmimetype   = new Mimetype();
         $workingfile = $this->downloadname;
         if ('' !== xoops_trim($filename)) {
             $workingfile = $filename;
@@ -121,8 +123,8 @@ class sFiles
         $ret    = [];
         $sql    = 'SELECT * FROM ' . $this->table . ' WHERE storyid=' . (int)$storyid;
         $result = $this->db->query($sql);
-        while ($myrow = $this->db->fetchArray($result)) {
-            $ret[] = new sFiles($myrow);
+        while (false !== ($myrow = $this->db->fetchArray($result))) {
+            $ret[] = new Files($myrow);
         }
 
         return $ret;
@@ -153,7 +155,7 @@ class sFiles
      */
     public function store()
     {
-        $myts         = MyTextSanitizer::getInstance();
+        $myts         = \MyTextSanitizer::getInstance();
         $fileRealName = $myts->addSlashes($this->filerealname);
         $downloadname = $myts->addSlashes($this->downloadname);
         $date         = time();
@@ -283,7 +285,7 @@ class sFiles
      */
     public function getFileRealName($format = 'S')
     {
-        $myts = MyTextSanitizer::getInstance();
+        $myts = \MyTextSanitizer::getInstance();
         switch ($format) {
             case 'S':
             case 'Show':
@@ -313,7 +315,7 @@ class sFiles
      */
     public function getMimetype($format = 'S')
     {
-        $myts = MyTextSanitizer::getInstance();
+        $myts = \MyTextSanitizer::getInstance();
         switch ($format) {
             case 'S':
             case 'Show':
@@ -343,7 +345,7 @@ class sFiles
      */
     public function getDownloadname($format = 'S')
     {
-        $myts = MyTextSanitizer::getInstance();
+        $myts = \MyTextSanitizer::getInstance();
         switch ($format) {
             case 'S':
             case 'Show':
@@ -394,7 +396,7 @@ class sFiles
             $sql    = 'SELECT storyid, count(fileid) AS cnt FROM ' . $this->table . ' WHERE storyid IN (';
             $sql    .= implode(',', $stories) . ') GROUP BY storyid';
             $result = $this->db->query($sql);
-            while ($myrow = $this->db->fetchArray($result)) {
+            while (false !== ($myrow = $this->db->fetchArray($result))) {
                 $ret[$myrow['storyid']] = $myrow['cnt'];
             }
         }

@@ -1,4 +1,5 @@
-<?php
+<?php namespace XoopsModules\News;
+
 /*
  * You may not change or alter any portion of this comment or credits
  * of supporting developers from this source code or any supporting source code
@@ -15,13 +16,20 @@
  * @package
  * @since
  * @author         XOOPS Development Team
- * @author         Herve Thouzard  URL: http://www.herve-thouzard.com
+ * @author         Hervé Thouzard  URL: http://www.herve-thouzard.com
  */
 
 /**
  * @param $items
  *
  * @return bool|null
+ */
+
+use XoopsModules\News;
+
+/**
+ * @param $items
+ * @return null
  */
 function news_tag_iteminfo(&$items)
 {
@@ -35,8 +43,8 @@ function news_tag_iteminfo(&$items)
             $items_id[] = (int)$item_id;
         }
     }
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-    $tempNews  = new NewsStory();
+//    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+    $tempNews  = new \XoopsModules\News\NewsStory();
     $items_obj = $tempNews->getStoriesByIds($items_id);
 
     foreach (array_keys($items) as $cat_id) {
@@ -67,7 +75,7 @@ function news_tag_synchronization($mid)
     global $xoopsDB;
     $itemHandler_keyName = 'storyid';
     $itemHandler_table   = $xoopsDB->prefix('news_stories');
-    $linkHandler         = xoops_getModuleHandler('link', 'tag');
+    $linkHandler         = \XoopsModules\Tag\Helper::getInstance()->getHandler('Link'); //@var \XoopsModules\Tag\Handler $tagHandler
     $where               = "($itemHandler_table.published > 0 AND $itemHandler_table.published <= " . time() . ") AND ($itemHandler_table.expired = 0 OR $itemHandler_table.expired > " . time() . ')';
 
     /* clear tag-item links */

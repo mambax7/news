@@ -30,20 +30,23 @@
  *
  * @param type $nomvariable description
  */
-include __DIR__ . '/../../mainfile.php';
+
+use XoopsModules\News;
+
+require_once dirname(dirname(__DIR__)) . '/mainfile.php';
 require_once XOOPS_ROOT_PATH . '/class/template.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+
 
 error_reporting(0);
 $GLOBALS['xoopsLogger']->activated = false;
 
-if (!NewsUtility::getModuleOption('topicsrss')) {
+if (!News\Utility::getModuleOption('topicsrss')) {
     exit();
 }
 
-$topicid = isset($_GET['topicid']) ? (int)$_GET['topicid'] : 0;
+$topicid = \Xmf\Request::getInt('topicid', 0, 'GET');
 if (0 == $topicid) {
     exit();
 }
@@ -52,19 +55,19 @@ if (function_exists('mb_http_output')) {
     mb_http_output('pass');
 }
 
-$restricted = NewsUtility::getModuleOption('restrictindex');
-$newsnumber = NewsUtility::getModuleOption('storyhome');
+$restricted = News\Utility::getModuleOption('restrictindex');
+$newsnumber = News\Utility::getModuleOption('storyhome');
 
 $charset = 'utf-8';
 
 header('Content-Type:text/xml; charset=' . $charset);
-$story        = new NewsStory();
-$tpl          = new XoopsTpl();
+$story        = new \XoopsModules\News\NewsStory();
+$tpl          = new \XoopsTpl();
 $tpl->caching = 2;
 $tpl->xoops_setCacheTime(3600); // Change this to the value you want
 if (!$tpl->is_cached('db:news_rss.tpl', $topicid)) {
-    $xt     = new NewsTopic($topicid);
-    $sarray = NewsStory::getAllPublished($newsnumber, 0, $restricted, $topicid);
+    $xt     = new  \XoopsModules\News\NewsTopic($topicid);
+    $sarray = \XoopsModules\News\NewsStory::getAllPublished($newsnumber, 0, $restricted, $topicid);
     if (is_array($sarray) && count($sarray) > 0) {
         $sitename = htmlspecialchars($xoopsConfig['sitename'], ENT_QUOTES);
         $slogan   = htmlspecialchars($xoopsConfig['slogan'], ENT_QUOTES);
@@ -95,7 +98,7 @@ if (!$tpl->is_cached('db:news_rss.tpl', $topicid)) {
         foreach ($sarray as $story) {
             $storytitle = $story->title();
             //if we are allowing html, we need to use htmlspecialchars or any bug will break the output
-            $description = htmlspecialchars($story->hometext());
+            $description = htmlspecialchars($story->hometext(), ENT_QUOTES | ENT_HTML5);
             $tpl->append('items', [
                 'title'       => xoops_utf8_encode($storytitle),
                 'link'        => XOOPS_URL . '/modules/news/article.php?storyid=' . $story->storyid(),

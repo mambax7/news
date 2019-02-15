@@ -18,9 +18,9 @@
  */
 
 // comment callback functions
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+// require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
 
 /**
  * @param $story_id
@@ -32,7 +32,7 @@ function news_com_update($story_id, $total_num)
 {
     $story_id  = (int)$story_id;
     $total_num = (int)$total_num;
-    $article   = new NewsStory($story_id);
+    $article   = new \XoopsModules\News\NewsStory($story_id);
     if (!$article->updateComments($total_num)) {
         return false;
     }

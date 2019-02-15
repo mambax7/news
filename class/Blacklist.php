@@ -1,6 +1,7 @@
-<?php
+<?php namespace XoopsModules\News;
+
 //  ------------------------------------------------------------------------ //
-//                  Copyright (c) 2005-2006 Herve Thouzard                     //
+//                  Copyright (c) 2005-2006 Hervé Thouzard                     //
 //                     <http://www.herve-thouzard.com>                      //
 // ------------------------------------------------------------------------- //
 //  This program is free software; you can redistribute it and/or modify     //
@@ -22,12 +23,12 @@
 //  along with this program; if not, write to the Free Software              //
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 
 /**
- * Class news_blacklist
+ * Class Blacklist
  */
-class news_blacklist
+class Blacklist
 {
     public $keywords; // Holds keywords
 
@@ -37,7 +38,7 @@ class news_blacklist
     public function getAllKeywords()
     {
         $ret      = $tbl_black_list = [];
-        $myts     = MyTextSanitizer::getInstance();
+        $myts     = \MyTextSanitizer::getInstance();
         $filename = XOOPS_UPLOAD_PATH . '/news_black_list.php';
         if (file_exists($filename)) {
             require_once $filename;
@@ -79,7 +80,7 @@ class news_blacklist
      */
     public function addkeywords($keyword)
     {
-        $myts = MyTextSanitizer::getInstance();
+        $myts = \MyTextSanitizer::getInstance();
         if (is_array($keyword)) {
             foreach ($keyword as $onekeyword) {
                 $onekeyword = xoops_trim($myts->htmlSpecialChars($onekeyword));
@@ -129,7 +130,7 @@ class news_blacklist
         if (file_exists($filename)) {
             unlink($filename);
         }
-        $fd = fopen($filename, 'w') || die('Error unable to create the blacklist file');
+        $fd = fopen($filename, 'wb') || die('Error unable to create the blacklist file');
         fwrite($fd, "<?php\n");
         fwrite($fd, '$tbl_black_list=array(' . "\n");
         foreach ($this->keywords as $onekeyword) {

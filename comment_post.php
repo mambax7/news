@@ -17,18 +17,23 @@
  * @author         XOOPS Development Team
  */
 
-include __DIR__ . '/../../mainfile.php';
+use XoopsModules\News;
+
+require_once dirname(dirname(__DIR__)) . '/mainfile.php';
+
+/** @var News\Helper $helper */
+$helper = News\Helper::getInstance();
 
 // We verify that the user can post comments **********************************
-if (!isset($xoopsModuleConfig)) {
+if (null === $helper->getModule()) {
     die();
 }
 
-if (0 == $xoopsModuleConfig['com_rule']) { // Comments are deactivated
+if (0 == $helper->getConfig('com_rule')) { // Comments are deactivated
     die();
 }
 
-if (0 == $xoopsModuleConfig['com_anonpost'] && !is_object($xoopsUser)) { // Anonymous users can't post
+if (0 == $helper->getConfig('com_anonpost') && !is_object($xoopsUser)) { // Anonymous users can't post
     die();
 }
 // ****************************************************************************

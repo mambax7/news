@@ -17,18 +17,16 @@
  * @author         XOOPS Development Team
  */
 
-$moduleDirName = basename(dirname(__DIR__));
+use XoopsModules\News;
 
-if (false !== ($moduleHelper = Xmf\Module\Helper::getHelper($moduleDirName))) {
-} else {
-    $moduleHelper = Xmf\Module\Helper::getHelper('system');
-}
-
+//require_once  dirname(__DIR__) . '/include/common.php';
+/** @var News\Helper $helper */
+$helper = News\Helper::getInstance();
 
 $pathIcon32 = \Xmf\Module\Admin::menuIconPath('');
-//$pathModIcon32 = $moduleHelper->getModule()->getInfo('modicons32');
-
-$moduleHelper->loadLanguage('modinfo');
+if (is_object($helper->getModule())) {
+    $pathModIcon32 = $helper->getModule()->getInfo('modicons32');
+}
 
 $adminObject = [];
 $adminmenu[] = [
@@ -54,6 +52,15 @@ $adminmenu[] = [
     'link'  => 'admin/groupperms.php',
     'icon'  => $pathIcon32 . '/permissions.png'
 ];
+
+
+// Blocks Admin
+$adminmenu[] = [
+    'title' => _MI_NEWS_BLOCKS,
+    'link'  => 'admin/blocksadmin.php',
+    'icon'  => $pathIcon32 . '/block.png'
+];
+
 
 $adminmenu[] = [
     'title' => _MI_NEWS_PRUNENEWS,

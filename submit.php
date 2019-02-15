@@ -17,23 +17,28 @@
  * @author         XOOPS Development Team
  */
 
-//defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+use XoopsModules\Tag;
+use XoopsModules\News;
+
+//defined('XOOPS_ROOT_PATH') || die('Restricted access');
 if (!defined('XOOPS_ROOT_PATH')) {
-    include __DIR__ . '/../../mainfile.php';
+    require_once dirname(dirname(__DIR__)) . '/mainfile.php';
 }
 require_once __DIR__ . '/header.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.sfiles.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.sfiles.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
 require_once XOOPS_ROOT_PATH . '/class/uploader.php';
 require_once XOOPS_ROOT_PATH . '/header.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
-if (file_exists(XOOPS_ROOT_PATH . '/modules/news/language/' . $xoopsConfig['language'] . '/admin.php')) {
-    require_once XOOPS_ROOT_PATH . '/modules/news/language/' . $xoopsConfig['language'] . '/admin.php';
-} else {
-    require_once XOOPS_ROOT_PATH . '/modules/news/language/english/admin.php';
-}
-$myts      = MyTextSanitizer::getInstance();
+
+/** @var News\Helper $helper */
+$helper = News\Helper::getInstance();
+
+/** @var News\Helper $helper */
+$helper = News\Helper::getInstance();
+$helper->loadLanguage('admin');
+
+$myts      = \MyTextSanitizer::getInstance();
 $module_id = $xoopsModule->getVar('mid');
 $storyid   = 0;
 
@@ -43,39 +48,39 @@ if (is_object($xoopsUser)) {
     $groups = XOOPS_GROUP_ANONYMOUS;
 }
 
-$gpermHandler = xoops_getHandler('groupperm');
+$grouppermHandler = xoops_getHandler('groupperm');
 
-if (isset($_POST['topic_id'])) {
-    $perm_itemid = (int)$_POST['topic_id'];
+if (\Xmf\Request::hasVar('topic_id', 'POST')) {
+    $perm_itemid = \Xmf\Request::getInt('topic_id', 0, 'POST');
 } else {
     $perm_itemid = 0;
 }
 //If no access
-if (!$gpermHandler->checkRight('news_submit', $perm_itemid, $groups, $module_id)) {
+if (!$grouppermHandler->checkRight('news_submit', $perm_itemid, $groups, $module_id)) {
     redirect_header(XOOPS_URL . '/modules/news/index.php', 3, _NOPERM);
 }
 $op = 'form';
 
 //If approve privileges
 $approveprivilege = 0;
-if (is_object($xoopsUser) && $gpermHandler->checkRight('news_approve', $perm_itemid, $groups, $module_id)) {
+if (is_object($xoopsUser) && $grouppermHandler->checkRight('news_approve', $perm_itemid, $groups, $module_id)) {
     $approveprivilege = 1;
 }
 
-if (isset($_POST['preview'])) {
+if (\Xmf\Request::hasVar('preview', 'POST')) {
     $op = 'preview';
-} elseif (isset($_POST['post'])) {
+} elseif (\Xmf\Request::hasVar('post', 'POST')) {
     $op = 'post';
-} elseif (isset($_GET['op']) && isset($_GET['storyid'])) {
+} elseif (\Xmf\Request::hasVar('op', 'GET') && \Xmf\Request::hasVar('storyid', 'GET')) {
     // Verify that the user can edit or delete an article
     if ('edit' === $_GET['op'] || 'delete' === $_GET['op']) {
-        if (1 == $xoopsModuleConfig['authoredit']) {
-            $tmpstory = new NewsStory((int)$_GET['storyid']);
-            if (is_object($xoopsUser) && $xoopsUser->getVar('uid') != $tmpstory->uid() && !NewsUtility::isAdminGroup()) {
+        if (1 == $helper->getConfig('authoredit')) {
+            $tmpstory = new \XoopsModules\News\NewsStory(\Xmf\Request::getInt('storyid', 0, 'GET'));
+            if (is_object($xoopsUser) && $xoopsUser->getVar('uid') != $tmpstory->uid() && !News\Utility::isAdminGroup()) {
                 redirect_header(XOOPS_URL . '/modules/news/index.php', 3, _NOPERM);
             }
         } else { // Users can't edit their articles
-            if (!NewsUtility::isAdminGroup()) {
+            if (!News\Utility::isAdminGroup()) {
                 redirect_header(XOOPS_URL . '/modules/news/index.php', 3, _NOPERM);
             }
         }
@@ -83,26 +88,27 @@ if (isset($_POST['preview'])) {
 
     if ($approveprivilege && 'edit' === $_GET['op']) {
         $op      = 'edit';
-        $storyid = (int)$_GET['storyid'];
+        $storyid = \Xmf\Request::getInt('storyid', 0, 'GET');
     } elseif ($approveprivilege && 'delete' === $_GET['op']) {
         $op      = 'delete';
-        $storyid = (int)$_GET['storyid'];
+        $storyid = \Xmf\Request::getInt('storyid', 0, 'GET');
     } else {
-        if (NewsUtility::getModuleOption('authoredit') && is_object($xoopsUser) && isset($_GET['storyid'])
+        if (News\Utility::getModuleOption('authoredit') && is_object($xoopsUser) && isset($_GET['storyid'])
             && ('edit' === $_GET['op']
                 || 'preview' === $_POST['op']
                 || 'post' === $_POST['op'])) {
             $storyid = 0;
-            $storyid = isset($_GET['storyid']) ? (int)$_GET['storyid'] : (int)$_POST['storyid'];
+//            $storyid = isset($_GET['storyid']) ? \Xmf\Request::getInt('storyid', 0, GET) : \Xmf\Request::getInt('storyid', 0, POST);
+            $storyid = \Xmf\Request::getInt('storyid', 0);
             if (!empty($storyid)) {
-                $tmpstory = new NewsStory($storyid);
+                $tmpstory = new \XoopsModules\News\NewsStory($storyid);
                 if ($tmpstory->uid() == $xoopsUser->getVar('uid')) {
                     $op = isset($_GET['op']) ? $_GET['op'] : $_POST['post'];
                     unset($tmpstory);
                     $approveprivilege = 1;
                 } else {
                     unset($tmpstory);
-                    if (!NewsUtility::isAdminGroup()) {
+                    if (!News\Utility::isAdminGroup()) {
                         redirect_header(XOOPS_URL . '/modules/news/index.php', 3, _NOPERM);
                     } else {
                         $approveprivilege = 1;
@@ -110,7 +116,7 @@ if (isset($_POST['preview'])) {
                 }
             }
         } else {
-            if (!NewsUtility::isAdminGroup()) {
+            if (!News\Utility::isAdminGroup()) {
                 unset($tmpstory);
                 redirect_header(XOOPS_URL . '/modules/news/index.php', 3, _NOPERM);
             } else {
@@ -130,8 +136,8 @@ switch ($op) {
         //if ($storyid==0 && isset($_POST['storyid'])) {
         //$storyid=(int)($_POST['storyid']);
         //}
-        $story = new NewsStory($storyid);
-        if (!$gpermHandler->checkRight('news_view', $story->topicid(), $groups, $module_id)) {
+        $story = new \XoopsModules\News\NewsStory($storyid);
+        if (!$grouppermHandler->checkRight('news_view', $story->topicid(), $groups, $module_id)) {
             redirect_header(XOOPS_URL . '/modules/news/index.php', 0, _NOPERM);
         }
         echo "<table width='100%' border='0' cellspacing='1' class='outer'><tr><td class=\"odd\">";
@@ -166,7 +172,7 @@ switch ($op) {
         $type         = $story->type();
         $topicdisplay = $story->topicdisplay();
         $topicalign   = $story->topicalign(false);
-        if (!NewsUtility::isAdminGroup()) {
+        if (!News\Utility::isAdminGroup()) {
             require_once XOOPS_ROOT_PATH . '/modules/news/include/storyform.inc.php';
         } else {
             require_once XOOPS_ROOT_PATH . '/modules/news/include/storyform.original.php';
@@ -175,31 +181,31 @@ switch ($op) {
         break;
 
     case 'preview':
-        $topic_id = (int)$_POST['topic_id'];
-        $xt       = new NewsTopic($topic_id);
-        if (isset($_GET['storyid'])) {
-            $storyid = (int)$_GET['storyid'];
+        $topic_id = \Xmf\Request::getInt('topic_id', 0, 'POST');
+        $xt       = new  \XoopsModules\News\NewsTopic($topic_id);
+        if (\Xmf\Request::hasVar('storyid', 'GET')) {
+            $storyid = \Xmf\Request::getInt('storyid', 0, 'GET');
         } else {
-            if (isset($_POST['storyid'])) {
-                $storyid = (int)$_POST['storyid'];
+            if (\Xmf\Request::hasVar('storyid', 'POST')) {
+                $storyid = \Xmf\Request::getInt('storyid', 0, 'POST');
             } else {
                 $storyid = 0;
             }
         }
 
         if (!empty($storyid)) {
-            $story     = new NewsStory($storyid);
+            $story     = new \XoopsModules\News\NewsStory($storyid);
             $published = $story->published();
             $expired   = $story->expired();
         } else {
-            $story     = new NewsStory();
-            $published = isset($_POST['publish_date']) ? $_POST['publish_date'] : 0;
+            $story     = new \XoopsModules\News\NewsStory();
+            $published = \Xmf\Request::getInt('publish_date', 0, 'POST');
             if (!empty($published) && isset($_POST['autodate']) && (int)(1 == $_POST['autodate'])) {
                 $published = strtotime($published['date']) + $published['time'];
             } else {
                 $published = 0;
             }
-            $expired = isset($_POST['expiry_date']) ? $_POST['expiry_date'] : 0;
+            $expired = \Xmf\Request::getInt('expiry_date', 0, 'POST');
             if (!empty($expired) && isset($_POST['autoexpdate']) && (int)(1 == $_POST['autoexpdate'])) {
                 $expired = strtotime($expired['date']) + $expired['time'];
             } else {
@@ -207,15 +213,15 @@ switch ($op) {
             }
         }
         $topicid = $topic_id;
-        if (isset($_POST['topicdisplay'])) {
-            $topicdisplay = (int)$_POST['topicdisplay'];
+        if (\Xmf\Request::hasVar('topicdisplay', 'POST')) {
+            $topicdisplay = \Xmf\Request::getInt('topicdisplay', 0, 'POST');
         } else {
             $topicdisplay = 1;
         }
 
-        $approve    = isset($_POST['approve']) ? (int)$_POST['approve'] : 0;
+        $approve    = \Xmf\Request::getInt('approve', 0, 'POST');
         $topicalign = 'R';
-        if (isset($_POST['topicalign'])) {
+        if (\Xmf\Request::hasVar('topicalign', 'POST')) {
             $topicalign = $_POST['topicalign'];
         }
         $story->setTitle($_POST['title']);
@@ -225,30 +231,30 @@ switch ($op) {
             $story->setTopicdisplay($topicdisplay);
             $story->setTopicalign($topicalign);
             $story->setBodytext($_POST['bodytext']);
-            if (NewsUtility::getModuleOption('metadata')) {
+            if (News\Utility::getModuleOption('metadata')) {
                 $story->setKeywords($_POST['keywords']);
                 $story->setDescription($_POST['description']);
-                $story->setIhome((int)$_POST['ihome']);
+                $story->setIhome(\Xmf\Request::getInt('ihome', 0, 'POST'));
             }
         } else {
-            $noname = isset($_POST['noname']) ? (int)$_POST['noname'] : 0;
+            $noname = \Xmf\Request::getInt('noname', 0, 'POST');
         }
 
         if ($approveprivilege || (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid()))) {
-            if (isset($_POST['author'])) {
-                $story->setUid((int)$_POST['author']);
+            if (\Xmf\Request::hasVar('author', 'POST')) {
+                $story->setUid(\Xmf\Request::getInt('author', 0, 'POST'));
             }
         }
 
-        $notifypub = isset($_POST['notifypub']) ? (int)$_POST['notifypub'] : 0;
-        $nosmiley  = isset($_POST['nosmiley']) ? (int)$_POST['nosmiley'] : 0;
+        $notifypub = \Xmf\Request::getInt('notifypub', 0, 'POST');
+        $nosmiley  = \Xmf\Request::getInt('nosmiley', 0, 'POST');
         if (isset($nosmiley) && (0 == $nosmiley || 1 == $nosmiley)) {
             $story->setNosmiley($nosmiley);
         } else {
             $nosmiley = 0;
         }
         if ($approveprivilege) {
-            $nohtml = isset($_POST['nohtml']) ? (int)$_POST['nohtml'] : 0;
+            $nohtml = \Xmf\Request::getInt('nohtml', 0, 'POST');
             $story->setNohtml($nohtml);
             if (!isset($_POST['approve'])) {
                 $approve = 0;
@@ -281,51 +287,51 @@ switch ($op) {
         themecenterposts($p_title, $p_hometext);
 
         //Display post edit form
-        $returnside = (int)$_POST['returnside'];
+        $returnside = \Xmf\Request::getInt('returnside', 0, 'POST');
         require_once XOOPS_ROOT_PATH . '/modules/news/include/storyform.inc.php';
         break;
 
     case 'post':
-        $nohtml_db = isset($_POST['nohtml']) ? $_POST['nohtml'] : 1;
+        $nohtml_db = \Xmf\Request::getInt('nohtml', 1, 'POST');
         if (is_object($xoopsUser)) {
             $uid = $xoopsUser->getVar('uid');
             if ($approveprivilege) {
                 $nohtml_db = empty($_POST['nohtml']) ? 0 : 1;
             }
-            if (isset($_POST['author']) && ($approveprivilege || $xoopsUser->isAdmin($xoopsModule->mid()))) {
-                $uid = (int)$_POST['author'];
+            if (\Xmf\Request::hasVar('author', 'POST') && ($approveprivilege || $xoopsUser->isAdmin($xoopsModule->mid()))) {
+                $uid = \Xmf\Request::getInt('author', 0, 'POST');
             }
         } else {
             $uid = 0;
         }
 
-        if (isset($_GET['storyid'])) {
-            $storyid = (int)$_GET['storyid'];
+        if (\Xmf\Request::hasVar('storyid', 'GET')) {
+            $storyid = \Xmf\Request::getInt('storyid', 0, 'GET');
         } else {
-            if (isset($_POST['storyid'])) {
-                $storyid = (int)$_POST['storyid'];
+            if (\Xmf\Request::hasVar('storyid', 'POST')) {
+                $storyid = \Xmf\Request::getInt('storyid', 0, 'POST');
             } else {
                 $storyid = 0;
             }
         }
 
         if (empty($storyid)) {
-            $story    = new NewsStory();
+            $story    = new \XoopsModules\News\NewsStory();
             $editmode = false;
         } else {
-            $story    = new NewsStory($storyid);
+            $story    = new \XoopsModules\News\NewsStory($storyid);
             $editmode = true;
         }
         $story->setUid($uid);
         $story->setTitle($_POST['title']);
         $story->setSubtitle($_POST['subtitle']);
         $story->setHometext($_POST['hometext']);
-        $story->setTopicId((int)$_POST['topic_id']);
+        $story->setTopicId(\Xmf\Request::getInt('topic_id', 0, 'POST'));
         $story->setHostname(xoops_getenv('REMOTE_ADDR'));
         $story->setNohtml($nohtml_db);
-        $nosmiley = isset($_POST['nosmiley']) ? (int)$_POST['nosmiley'] : 0;
+        $nosmiley = \Xmf\Request::getInt('nosmiley', 0, 'POST');
         $story->setNosmiley($nosmiley);
-        $notifypub = isset($_POST['notifypub']) ? (int)$_POST['notifypub'] : 0;
+        $notifypub = \Xmf\Request::getInt('notifypub', 0, 'POST');
         $story->setNotifyPub($notifypub);
         $story->setType($_POST['type']);
 
@@ -347,19 +353,19 @@ switch ($op) {
         }
 
         if ($approveprivilege) {
-            if (NewsUtility::getModuleOption('metadata')) {
+            if (News\Utility::getModuleOption('metadata')) {
                 $story->setDescription($_POST['description']);
                 $story->setKeywords($_POST['keywords']);
             }
             $story->setTopicdisplay($_POST['topicdisplay']); // Display Topic Image ? (Yes or No)
             $story->setTopicalign($_POST['topicalign']); // Topic Align, 'Right' or 'Left'
             $story->setIhome($_POST['ihome']); // Publish in home ? (Yes or No)
-            if (isset($_POST['bodytext'])) {
+            if (\Xmf\Request::hasVar('bodytext', 'POST')) {
                 $story->setBodytext($_POST['bodytext']);
             } else {
                 $story->setBodytext(' ');
             }
-            $approve = isset($_POST['approve']) ? (int)$_POST['approve'] : 0;
+            $approve = \Xmf\Request::getInt('approve', 0, 'POST');
 
             if (!$story->published() && $approve) {
                 $story->setPublished(time());
@@ -371,11 +377,11 @@ switch ($op) {
             if (!$approve) {
                 $story->setPublished(0);
             }
-        } elseif (1 == $xoopsModuleConfig['autoapprove'] && !$approveprivilege) {
+        } elseif (1 == $helper->getConfig('autoapprove') && !$approveprivilege) {
             if (empty($storyid)) {
                 $approve = 1;
             } else {
-                $approve = isset($_POST['approve']) ? (int)$_POST['approve'] : 0;
+                $approve = \Xmf\Request::getInt('approve', 0, 'POST');
             }
             if ($approve) {
                 $story->setPublished(time());
@@ -390,7 +396,7 @@ switch ($op) {
         $story->setApproved($approve);
 
         if ($approve) {
-            NewsUtility::updateCache();
+            News\Utility::updateCache();
         }
 
         // Increment author's posts count (only if it's a new article)
@@ -403,7 +409,7 @@ switch ($op) {
 
         // Second case, it's not an anonymous, the story is NOT approved and it's NOT a new story (typical when someone is approving a submited story)
         if (is_object($xoopsUser) && $approve && !empty($storyid)) {
-            $storytemp = new NewsStory($storyid);
+            $storytemp = new \XoopsModules\News\NewsStory($storyid);
             if (!$storytemp->published() && $storytemp->uid() > 0) { // the article has been submited but not approved
                 $tmpuser       = new xoopsUser($storytemp->uid());
                 $memberHandler = xoops_getHandler('member');
@@ -413,7 +419,7 @@ switch ($op) {
         }
 
         $allowupload = false;
-        switch ($xoopsModuleConfig['uploadgroups']) {
+        switch ($helper->getConfig('uploadgroups')) {
             case 1: //Submitters and Approvers
                 $allowupload = true;
                 break;
@@ -425,7 +431,7 @@ switch ($op) {
                 break;
         }
 
-        if ($allowupload && isset($_POST['deleteimage']) && 1 == (int)$_POST['deleteimage']) {
+        if ($allowupload && isset($_POST['deleteimage']) && 1 == \Xmf\Request::getInt('deleteimage', 0, 'POST')) {
             $currentPicture = $story->picture();
             if ('' !== xoops_trim($currentPicture)) {
                 $currentPicture = XOOPS_ROOT_PATH . '/uploads/news/image/' . xoops_trim($story->picture());
@@ -440,20 +446,20 @@ switch ($op) {
         }
 
         if ($allowupload) { // L'image
-            if (isset($_POST['xoops_upload_file'])) {
+            if (\Xmf\Request::hasVar('xoops_upload_file', 'POST')) {
                 $fldname = $_FILES[$_POST['xoops_upload_file'][1]];
                 $fldname = $fldname['name'];
                 if (xoops_trim('' !== $fldname)) {
-                    $sfiles         = new sFiles();
+                    $sfiles         = new \XoopsModules\News\Files();
                     $destname       = $sfiles->createUploadName(XOOPS_ROOT_PATH . '/uploads/news/image', $fldname);
                     $permittedtypes = ['image/gif', 'image/jpeg', 'image/pjpeg', 'image/x-png', 'image/png'];
-                    $uploader       = new XoopsMediaUploader(XOOPS_ROOT_PATH . '/uploads/news/image', $permittedtypes, $xoopsModuleConfig['maxuploadsize']);
+                    $uploader       = new \XoopsMediaUploader(XOOPS_ROOT_PATH . '/uploads/news/image', $permittedtypes, $helper->getConfig('maxuploadsize'));
                     $uploader->setTargetFileName($destname);
                     if ($uploader->fetchMedia($_POST['xoops_upload_file'][1])) {
                         if ($uploader->upload()) {
                             $fullPictureName = XOOPS_ROOT_PATH . '/uploads/news/image/' . basename($destname);
                             $newName         = XOOPS_ROOT_PATH . '/uploads/news/image/redim_' . basename($destname);
-                            NewsUtility::resizePicture($fullPictureName, $newName, $xoopsModuleConfig['maxwidth'], $xoopsModuleConfig['maxheight']);
+                            News\Utility::resizePicture($fullPictureName, $newName, $helper->getConfig('maxwidth'), $helper->getConfig('maxheight'));
                             if (file_exists($newName)) {
                                 @unlink($fullPictureName);
                                 rename($newName, $fullPictureName);
@@ -473,14 +479,15 @@ switch ($op) {
 
         $result = $story->store();
         if ($result) {
-            if (xoops_isActiveModule('tag') && NewsUtility::getModuleOption('tags')) {
-                $tagHandler = xoops_getModuleHandler('tag', 'tag');
+            if (xoops_isActiveModule('tag') && News\Utility::getModuleOption('tags')) {
+                $tagHandler = new \XoopsModules\Tag\TagHandler();
                 $tagHandler->updateByItem($_POST['item_tag'], $story->storyid(), $xoopsModule->getVar('dirname'), 0);
             }
 
             if (!$editmode) {
                 //  Notification
-                // TODO: modifier afin qu'en cas de pr�publication, la notification ne se fasse pas
+                // TODO: modify so that in case of pre-publication, the notification is not made
+                /** @var \XoopsNotificationHandler $notificationHandler */
                 $notificationHandler = xoops_getHandler('notification');
                 $tags                = [];
                 $tags['STORY_NAME']  = $story->title();
@@ -504,25 +511,25 @@ switch ($op) {
 
             if ($allowupload) {
                 // Manage upload(s)
-                if (isset($_POST['delupload']) && count($_POST['delupload']) > 0) {
+                if (\Xmf\Request::hasVar('delupload', 'POST') && count($_POST['delupload']) > 0) {
                     foreach ($_POST['delupload'] as $onefile) {
-                        $sfiles = new sFiles($onefile);
+                        $sfiles = new \XoopsModules\News\Files($onefile);
                         $sfiles->delete();
                     }
                 }
 
-                if (isset($_POST['xoops_upload_file'])) {
+                if (\Xmf\Request::hasVar('xoops_upload_file', 'POST')) {
                     $fldname = $_FILES[$_POST['xoops_upload_file'][0]];
                     $fldname = $fldname['name'];
                     if (xoops_trim('' !== $fldname)) {
-                        $sfiles   = new sFiles();
+                        $sfiles   = new \XoopsModules\News\Files();
                         $destname = $sfiles->createUploadName(XOOPS_UPLOAD_PATH, $fldname);
                         /**
                          * You can attach files to your news
                          */
-                        $permittedtypes = explode("\n", str_replace("\r", '', NewsUtility::getModuleOption('mimetypes')));
+                        $permittedtypes = explode("\n", str_replace("\r", '', News\Utility::getModuleOption('mimetypes')));
                         array_walk($permittedtypes, 'trim');
-                        $uploader = new XoopsMediaUploader(XOOPS_UPLOAD_PATH, $permittedtypes, $xoopsModuleConfig['maxuploadsize']);
+                        $uploader = new \XoopsMediaUploader(XOOPS_UPLOAD_PATH, $permittedtypes, $helper->getConfig('maxuploadsize'));
                         $uploader->setTargetFileName($destname);
                         if ($uploader->fetchMedia($_POST['xoops_upload_file'][0])) {
                             if ($uploader->upload()) {
@@ -545,7 +552,7 @@ switch ($op) {
         } else {
             echo _ERRORS;
         }
-        $returnside = isset($_POST['returnside']) ? (int)$_POST['returnside'] : 0;
+        $returnside = \Xmf\Request::getInt('returnside', 0, 'POST');
         if (!$returnside) {
             redirect_header(XOOPS_URL . '/modules/news/index.php', 2, _NW_THANKS);
         } else {
@@ -554,7 +561,7 @@ switch ($op) {
         break;
 
     case 'form':
-        $xt        = new NewsTopic();
+        $xt        = new  \XoopsModules\News\NewsTopic();
         $title     = '';
         $subtitle  = '';
         $hometext  = '';
@@ -575,7 +582,7 @@ switch ($op) {
             $expired      = 0;
             $published    = 0;
         }
-        if (1 == $xoopsModuleConfig['autoapprove']) {
+        if (1 == $helper->getConfig('autoapprove')) {
             $approve = 1;
         }
         require_once XOOPS_ROOT_PATH . '/modules/news/include/storyform.inc.php';

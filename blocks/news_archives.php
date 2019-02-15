@@ -17,7 +17,9 @@
  * @author         XOOPS Development Team
  */
 
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+use XoopsModules\News;
+
+// require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
 
 /**
  * Display archives
@@ -35,14 +37,11 @@ require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
 function b_news_archives_show($options)
 {
     global $xoopsDB, $xoopsConfig;
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
+    // require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
     require_once XOOPS_ROOT_PATH . '/language/' . $xoopsConfig['language'] . '/calendar.php';
-    if (file_exists(XOOPS_ROOT_PATH . '/modules/news/language/' . $xoopsConfig['language'] . '/main.php')) {
-        require_once XOOPS_ROOT_PATH . '/modules/news/language/' . $xoopsConfig['language'] . '/main.php';
-    } else {
-        require_once XOOPS_ROOT_PATH . '/modules/news/language/english/main.php';
-    }
+    /** @var News\Helper $helper */
+    $helper = News\Helper::getInstance();
+    $helper->loadLanguage('main');
 
     $months_arr    = [
         1  => _CAL_JANUARY,
@@ -71,7 +70,7 @@ function b_news_archives_show($options)
     if (!$result) {
         return '';
     }
-    while ($myrow = $xoopsDB->fetchArray($result)) {
+    while (false !== ($myrow = $xoopsDB->fetchArray($result))) {
         $year                = (int)substr($myrow['published'], 0, 4);
         $month               = (int)substr($myrow['published'], 5, 2);
         $formated_month      = $months_arr[$month];
@@ -98,7 +97,7 @@ function b_news_archives_edit($options)
     $seleyear  = $options[3];
     $selemonth = $options[4];
 
-    $tmpstory = new NewsStory;
+    $tmpstory = new \XoopsModules\News\NewsStory;
     $tmpstory->getOlderRecentNews($older, $recent); // We are searching for the module's older and more recent article's date
 
     // Min and max value for the two dates selectors
@@ -176,7 +175,7 @@ function b_news_archives_onthefly($options)
     $options = explode('|', $options);
     $block   = &b_news_archives_show($options);
 
-    $tpl = new XoopsTpl();
+    $tpl = new \XoopsTpl();
     $tpl->assign('block', $block);
     $tpl->display('db:news_block_archives.tpl');
 }

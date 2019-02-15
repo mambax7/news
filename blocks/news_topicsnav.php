@@ -17,7 +17,9 @@
  * @author         XOOPS Development Team
  */
 
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
+
+use XoopsModules\News;
 
 /**
  * @param $options
@@ -26,22 +28,21 @@
  */
 function b_news_topicsnav_show($options)
 {
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
-    $myts             = MyTextSanitizer::getInstance();
+    //    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+    $myts             = \MyTextSanitizer::getInstance();
     $block            = [];
     $newscountbytopic = [];
     $perms            = '';
-    $xt               = new NewsTopic();
-    $restricted       = NewsUtility::getModuleOption('restrictindex');
+    $xt               = new  \XoopsModules\News\NewsTopic();
+    $restricted       = News\Utility::getModuleOption('restrictindex');
     if ($restricted) {
         global $xoopsUser;
         /** @var XoopsModuleHandler $moduleHandler */
         $moduleHandler = xoops_getHandler('module');
         $newsModule    = $moduleHandler->getByDirname('news');
         $groups        = is_object($xoopsUser) ? $xoopsUser->getGroups() : XOOPS_GROUP_ANONYMOUS;
-        $gpermHandler  = xoops_getHandler('groupperm');
-        $topics        = $gpermHandler->getItemIds('news_view', $groups, $newsModule->getVar('mid'));
+        $grouppermHandler  = xoops_getHandler('groupperm');
+        $topics        = $grouppermHandler->getItemIds('news_view', $groups, $newsModule->getVar('mid'));
         if (count($topics) > 0) {
             $topics = implode(',', $topics);
             $perms  = ' AND topic_id IN (' . $topics . ') ';
@@ -104,7 +105,7 @@ function b_news_topicsnav_onthefly($options)
     $options = explode('|', $options);
     $block   = &b_news_topicsnav_show($options);
 
-    $tpl = new XoopsTpl();
+    $tpl = new \XoopsTpl();
     $tpl->assign('block', $block);
     $tpl->display('db:news_block_topicnav.tpl');
 }

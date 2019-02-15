@@ -18,7 +18,7 @@
  * @author         Hervé Thouzard (http://www.herve-thouzard.com)
  */
 
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 
 /**
  * Returns a module's option
@@ -33,6 +33,7 @@
  */
 
 use WideImage\WideImage;
+use XoopsModules\News;
 
 /**
  * @param             $option
@@ -86,12 +87,12 @@ function news_updaterating($storyid)
     $voteresult  = $xoopsDB->query($query);
     $votesDB     = $xoopsDB->getRowsNum($voteresult);
     $totalrating = 0;
-    while (list($rating) = $xoopsDB->fetchRow($voteresult)) {
+    while (false !== (list($rating) = $xoopsDB->fetchRow($voteresult))) {
         $totalrating += $rating;
     }
     $finalrating = $totalrating / $votesDB;
     $finalrating = number_format($finalrating, 4);
-    $sql         = sprintf('UPDATE %s SET rating = %u, votes = %u WHERE storyid = %u', $xoopsDB->prefix('news_stories'), $finalrating, $votesDB, $storyid);
+    $sql         = sprintf('UPDATE `%s` SET rating = %u, votes = %u WHERE storyid = %u', $xoopsDB->prefix('news_stories'), $finalrating, $votesDB, $storyid);
     $xoopsDB->queryF($sql);
 }
 
@@ -120,8 +121,8 @@ function news_MygetItemIds($permtype = 'news_view')
     $moduleHandler       = xoops_getHandler('module');
     $newsModule          = $moduleHandler->getByDirname('news');
     $groups              = is_object($xoopsUser) ? $xoopsUser->getGroups() : XOOPS_GROUP_ANONYMOUS;
-    $gpermHandler        = xoops_getHandler('groupperm');
-    $topics              = $gpermHandler->getItemIds($permtype, $groups, $newsModule->getVar('mid'));
+    $grouppermHandler        = xoops_getHandler('groupperm');
+    $topics              = $grouppermHandler->getItemIds($permtype, $groups, $newsModule->getVar('mid'));
     $tblperms[$permtype] = $topics;
 
     return $topics;
@@ -209,7 +210,7 @@ function news_isX23()
  * @param  string                                                                                                                         $width
  * @param  string                                                                                                                         $height
  * @param  string                                                                                                                         $supplemental
- * @return bool|XoopsFormDhtmlTextArea|XoopsFormEditor|XoopsFormFckeditor|XoopsFormHtmlarea|XoopsFormTextArea|XoopsFormTinyeditorTextArea
+ * @return bool|XoopsFormDhtmlTextArea|XoopsFormEditor|\XoopsFormFckeditor|\XoopsFormHtmlarea|\XoopsFormTextArea|\XoopsFormTinyeditorTextArea
  */
 function news_getWysiwygForm($caption, $name, $value = '', $width = '100%', $height = '400px', $supplemental = '')
 {
@@ -225,7 +226,7 @@ function news_getWysiwygForm($caption, $name, $value = '', $width = '100%', $hei
     $editor_configs['editor'] = $editor_option;
 
     if (news_isX23()) {
-        $editor = new XoopsFormEditor($caption, $name, $editor_configs);
+        $editor = new \XoopsFormEditor($caption, $name, $editor_configs);
 
         return $editor;
     }
@@ -235,31 +236,31 @@ function news_getWysiwygForm($caption, $name, $value = '', $width = '100%', $hei
         case 'fckeditor':
             if (is_readable(XOOPS_ROOT_PATH . '/class/fckeditor/formfckeditor.php')) {
                 require_once XOOPS_ROOT_PATH . '/class/fckeditor/formfckeditor.php';
-                $editor = new XoopsFormFckeditor($caption, $name, $value);
+                $editor = new \XoopsFormFckeditor($caption, $name, $value);
             }
             break;
 
         case 'htmlarea':
             if (is_readable(XOOPS_ROOT_PATH . '/class/htmlarea/formhtmlarea.php')) {
                 require_once XOOPS_ROOT_PATH . '/class/htmlarea/formhtmlarea.php';
-                $editor = new XoopsFormHtmlarea($caption, $name, $value);
+                $editor = new \XoopsFormHtmlarea($caption, $name, $value);
             }
             break;
 
         case 'dhtmltextarea':
         case 'dhtml':
-            $editor = new XoopsFormDhtmlTextArea($caption, $name, $value, 10, 50, $supplemental);
+            $editor = new \XoopsFormDhtmlTextArea($caption, $name, $value, 10, 50, $supplemental);
             break;
 
         case 'textarea':
-            $editor = new XoopsFormTextArea($caption, $name, $value);
+            $editor = new \XoopsFormTextArea($caption, $name, $value);
             break;
 
         case 'tinyeditor':
         case 'tinymce':
             if (is_readable(XOOPS_ROOT_PATH . '/class/xoopseditor/tinyeditor/formtinyeditortextarea.php')) {
                 require_once XOOPS_ROOT_PATH . '/class/xoopseditor/tinyeditor/formtinyeditortextarea.php';
-                $editor = new XoopsFormTinyeditorTextArea([
+                $editor = new \XoopsFormTinyeditorTextArea([
                                                               'caption' => $caption,
                                                               'name'    => $name,
                                                               'value'   => $value,
@@ -272,7 +273,7 @@ function news_getWysiwygForm($caption, $name, $value = '', $width = '100%', $hei
         case 'koivi':
             if (is_readable(XOOPS_ROOT_PATH . '/class/wysiwyg/formwysiwygtextarea.php')) {
                 require_once XOOPS_ROOT_PATH . '/class/wysiwyg/formwysiwygtextarea.php';
-                $editor = new XoopsFormWysiwygTextArea($caption, $name, $value, $width, $height, '');
+                $editor = new \XoopsFormWysiwygTextArea($caption, $name, $value, $width, $height, '');
             }
             break;
     }
@@ -311,8 +312,8 @@ function news_CreateMetaDatas($story = null)
 {
     global $xoopsConfig, $xoTheme, $xoopsTpl;
     $content = '';
-    $myts    = MyTextSanitizer::getInstance();
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+    $myts    = \MyTextSanitizer::getInstance();
+//    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
 
     /**
      * Firefox and Opera Navigation's Bar
@@ -327,10 +328,10 @@ function news_CreateMetaDatas($story = null)
 
         // Create chapters
         require_once XOOPS_ROOT_PATH . '/class/tree.php';
-        require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
-        $xt         = new NewsTopic();
+//        require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+        $xt         = new  \XoopsModules\News\NewsTopic();
         $allTopics  = $xt->getAllTopics(news_getmoduleoption('restrictindex'));
-        $topic_tree = new XoopsObjectTree($allTopics, 'topic_id', 'topic_pid');
+        $topic_tree = new \XoopsObjectTree($allTopics, 'topic_id', 'topic_pid');
         $topics_arr = $topic_tree->getAllChild(0);
         foreach ($topics_arr as $onetopic) {
             $content .= sprintf("<link rel=\"Chapter\" title=\"%s\" href=\"%s\">\n", $onetopic->topic_title(), XOOPS_URL . '/modules/news/index.php?storytopic=' . $onetopic->topic_id());
@@ -368,11 +369,11 @@ function news_CreateMetaDatas($story = null)
     if (news_getmoduleoption('dublincore') && isset($story) && is_object($story)) {
         $configHandler         = xoops_getHandler('config');
         $xoopsConfigMetaFooter = $configHandler->getConfigsByCat(XOOPS_CONF_METAFOOTER);
-        $content               .= '<meta name="DC.Title" content="' . NewsUtility::getDublinQuotes($story->title()) . "\">\n";
-        $content               .= '<meta name="DC.Creator" content="' . NewsUtility::getDublinQuotes($story->uname()) . "\">\n";
-        $content               .= '<meta name="DC.Subject" content="' . NewsUtility::getDublinQuotes($meta_keywords) . "\">\n";
-        $content               .= '<meta name="DC.Description" content="' . NewsUtility::getDublinQuotes($story->title()) . "\">\n";
-        $content               .= '<meta name="DC.Publisher" content="' . NewsUtility::getDublinQuotes($xoopsConfig['sitename']) . "\">\n";
+        $content               .= '<meta name="DC.Title" content="' . News\Utility::getDublinQuotes($story->title()) . "\">\n";
+        $content               .= '<meta name="DC.Creator" content="' . News\Utility::getDublinQuotes($story->uname()) . "\">\n";
+        $content               .= '<meta name="DC.Subject" content="' . News\Utility::getDublinQuotes($meta_keywords) . "\">\n";
+        $content               .= '<meta name="DC.Description" content="' . News\Utility::getDublinQuotes($story->title()) . "\">\n";
+        $content               .= '<meta name="DC.Publisher" content="' . News\Utility::getDublinQuotes($xoopsConfig['sitename']) . "\">\n";
         $content               .= '<meta name="DC.Date.created" scheme="W3CDTF" content="' . date('Y-m-d', $story->created) . "\">\n";
         $content               .= '<meta name="DC.Date.issued" scheme="W3CDTF" content="' . date('Y-m-d', $story->published) . "\">\n";
         $content               .= '<meta name="DC.Identifier" content="' . XOOPS_URL . '/modules/news/article.php?storyid=' . $story->storyid() . "\">\n";
@@ -380,7 +381,7 @@ function news_CreateMetaDatas($story = null)
         $content               .= '<meta name="DC.Language" content="' . _LANGCODE . "\">\n";
         $content               .= '<meta name="DC.Relation.isReferencedBy" content="' . XOOPS_URL . '/modules/news/index.php?storytopic=' . $story->topicid() . "\">\n";
         if (isset($xoopsConfigMetaFooter['meta_copyright'])) {
-            $content .= '<meta name="DC.Rights" content="' . NewsUtility::getDublinQuotes($xoopsConfigMetaFooter['meta_copyright']) . "\">\n";
+            $content .= '<meta name="DC.Rights" content="' . News\Utility::getDublinQuotes($xoopsConfigMetaFooter['meta_copyright']) . "\">\n";
         }
     }
 
@@ -407,14 +408,14 @@ function news_CreateMetaDatas($story = null)
  */
 function news_createmeta_keywords($content)
 {
-    include XOOPS_ROOT_PATH . '/modules/news/config.php';
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/blacklist.php';
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/registryfile.php';
+    require_once XOOPS_ROOT_PATH . '/modules/news/config.php';
+    // require_once XOOPS_ROOT_PATH . '/modules/news/class/blacklist.php';
+    // require_once XOOPS_ROOT_PATH . '/modules/news/class/registryfile.php';
 
     if (!$cfg['meta_keywords_auto_generate']) {
         return '';
     }
-    $registry = new news_registryfile('news_metagen_options.txt');
+    $registry = new \XoopsModules\News\Registryfile('news_metagen_options.txt');
     //    $tcontent = '';
     $tcontent = $registry->getfile();
     if ('' !== xoops_trim($tcontent)) {
@@ -426,7 +427,7 @@ function news_createmeta_keywords($content)
 
     $tmp = [];
     // Search for the "Minimum keyword length"
-    if (isset($_SESSION['news_keywords_limit'])) {
+    if (\Xmf\Request::hasVar('news_keywords_limit', 'SESSION')) {
         $limit = $_SESSION['news_keywords_limit'];
     } else {
         $configHandler                   = xoops_getHandler('config');
@@ -434,7 +435,7 @@ function news_createmeta_keywords($content)
         $limit                           = $xoopsConfigSearch['keyword_min'];
         $_SESSION['news_keywords_limit'] = $limit;
     }
-    $myts            = MyTextSanitizer::getInstance();
+    $myts            = \MyTextSanitizer::getInstance();
     $content         = str_replace('<br>', ' ', $content);
     $content         = $myts->undoHtmlSpecialChars($content);
     $content         = strip_tags($content);
@@ -515,7 +516,7 @@ function news_createmeta_keywords($content)
             break;
     }
     // Remove black listed words
-    $metablack = new news_blacklist();
+    $metablack = new \XoopsModules\News\Blacklist();
     $words     = $metablack->getAllKeywords();
     $keywords  = $metablack->remove_blacklisted($keywords);
 
@@ -556,7 +557,7 @@ function news_updateCache()
     require_once XOOPS_ROOT_PATH . '/class/template.php';
     $tplfileHandler = xoops_getHandler('tplfile');
     $tpllist        = $tplfileHandler->find(null, null, null, $folder);
-    $xoopsTpl       = new XoopsTpl();
+    $xoopsTpl       = new \XoopsTpl();
     xoops_template_clear_module_cache($xoopsModule->getVar('mid')); // Clear module's blocks cache
 
     // Remove cache for each page.
@@ -651,7 +652,7 @@ function news_is_admin_group()
 /**
  * Verify if the current "user" is a bot or not
  *
- * If you have a problem with this function, insert the folowing code just before the line if (isset($_SESSION['news_cache_bot'])) { :
+ * If you have a problem with this function, insert the folowing code just before the line if (\Xmf\Request::hasVar('news_cache_bot', 'SESSION'))) { :
  * return false;
  *
  * @package       News
@@ -660,7 +661,7 @@ function news_is_admin_group()
  */
 function news_isbot()
 {
-    if (isset($_SESSION['news_cache_bot'])) {
+    if (\Xmf\Request::hasVar('news_cache_bot', 'SESSION')) {
         return $_SESSION['news_cache_bot'];
     } else {
         // Add here every bot you know separated by a pipe | (not matter with the upper or lower cases)
@@ -695,7 +696,7 @@ function news_make_infotips($text)
 {
     $infotips = news_getmoduleoption('infotips');
     if ($infotips > 0) {
-        $myts = MyTextSanitizer::getInstance();
+        $myts = \MyTextSanitizer::getInstance();
 
         return $myts->htmlSpecialChars(xoops_substr(strip_tags($text), 0, $infotips));
     }

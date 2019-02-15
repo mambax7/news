@@ -17,29 +17,35 @@
  * @author         XOOPS Development Team
  */
 
-include __DIR__ . '/../../mainfile.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
+use XoopsModules\News;
+
+require_once dirname(dirname(__DIR__)) . '/mainfile.php';
+
+/** @var News\Helper $helper */
+$helper = News\Helper::getInstance();
+
+// require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+
 
 // We verify that the user can post comments **********************************
-if (!isset($xoopsModuleConfig)) {
+if (null === $helper->getModule()) {
     die();
 }
 
-if (0 == $xoopsModuleConfig['com_rule']) { // Comments are deactivated
+if (0 == $helper->getConfig('com_rule')) { // Comments are deactivated
     die();
 }
 
-if (0 == $xoopsModuleConfig['com_anonpost'] && !is_object($xoopsUser)) { // Anonymous users can't post
+if (0 == $helper->getConfig('com_anonpost') && !is_object($xoopsUser)) { // Anonymous users can't post
     die();
 }
 // ****************************************************************************
 
-$com_itemid = isset($_GET['com_itemid']) ? (int)$_GET['com_itemid'] : 0;
+$com_itemid = \Xmf\Request::getInt('com_itemid', 0, 'GET');
 if ($com_itemid > 0) {
-    $article = new NewsStory($com_itemid);
+    $article = new \XoopsModules\News\NewsStory($com_itemid);
     if ($article->storyid > 0) {
-        $com_replytext = _POSTEDBY . '&nbsp;<b>' . $article->uname() . '</b>&nbsp;' . _DATE . '&nbsp;<b>' . formatTimestamp($article->published(), NewsUtility::getModuleOption('dateformat')) . '</b><br><br>' . $article->hometext();
+        $com_replytext = _POSTEDBY . '&nbsp;<b>' . $article->uname() . '</b>&nbsp;' . _DATE . '&nbsp;<b>' . formatTimestamp($article->published(), News\Utility::getModuleOption('dateformat')) . '</b><br><br>' . $article->hometext();
         $bodytext      = $article->bodytext();
         if ('' !== $bodytext) {
             $com_replytext .= '<br><br>' . $bodytext . '';

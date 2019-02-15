@@ -23,16 +23,18 @@
  * This script will import topics, articles, files, links, ratings, comments and notifications from AMS 2.41
  *
  * @package   News
- * @author    Herve Thouzard (http://www.herve-thouzard.com)
- * @copyright 2005, 2006 - Herve Thouzard
+ * @author    Hervé Thouzard (http://www.herve-thouzard.com)
+ * @copyright 2005, 2006 - Hervé Thouzard
  */
 
-require_once __DIR__ . '/../../../include/cp_header.php';
+use XoopsModules\Ams;
+
+require_once  dirname(dirname(dirname(__DIR__))) . '/include/cp_header.php';
 xoops_cp_header();
-require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.sfiles.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.sfiles.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
 require_once XOOPS_ROOT_PATH . '/class/xoopstree.php';
 
 if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
@@ -47,17 +49,13 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
         echo "<br><br>If you check the two last options then the forum's link and all the external links will be added at the end of the body text.";
     } else {
         // Launch the import
-        if (file_exists(XOOPS_ROOT_PATH . '/modules/AMS/language/' . $xoopsConfig['language'] . '/main.php')) {
-            require_once XOOPS_ROOT_PATH . '/modules/AMS/language/' . $xoopsConfig['language'] . '/main.php';
-        } else {
-            require_once XOOPS_ROOT_PATH . '/modules/AMS/language/english/main.php';
-        }
-        if (file_exists(XOOPS_ROOT_PATH . '/modules/AMS/language/' . $xoopsConfig['language'] . '/admin.php')) {
-            require_once XOOPS_ROOT_PATH . '/modules/AMS/language/' . $xoopsConfig['language'] . '/admin.php';
-        } else {
-            require_once XOOPS_ROOT_PATH . '/modules/AMS/language/english/admin.php';
-        }
-        $db = XoopsDatabaseFactory::getDatabaseConnection();
+        /** @var \XoopsModules\Ams\Helper $amsHelper */
+        $amsHelper = \XoopsModules\Ams\Helper::getInstance();
+        $amsHelper->loadLanguage('admin');
+        $amsHelper->loadLanguage('main');
+
+        /** @var \XoopsMySQLDatabase $db */
+        $db = \XoopsDatabaseFactory::getDatabaseConnection();
         // User's choices
         $use_forum    = (isset($_POST['useforum']) && 1 == $_POST['useforum']) ? 1 : 0;
         $use_extlinks = (isset($_POST['useextlinks']) && 1 == $_POST['useextlinks']) ? 1 : 0;
@@ -81,12 +79,13 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
         $news_stories_votedata = $xoopsDB->prefix('news_stories_votedata');
         // Misc
         $commentHandler      = xoops_getHandler('comment');
+        /** @var \XoopsNotificationHandler $notificationHandler */
         $notificationHandler = xoops_getHandler('notification');
         $ams_news_topics     = []; // Key => AMS Id,  Value => News ID
 
         // The import by itself
         // Read topics by their order
-        $mytree     = new XoopsTree($ams_topics, 'topic_id', 'topic_pid');
+        $mytree     = new \XoopsTree($ams_topics, 'topic_id', 'topic_pid');
         $ams_topics = $mytree->getChildTreeArray(0, 'weight');
         foreach ($ams_topics as $one_amstopic) {
             // First we create the topic
@@ -96,7 +95,7 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
                     $topicpid = $ams_news_topics[$one_amstopic['topic_pid']];
                 }
             }
-            $news_topic = new NewsTopic();
+            $news_topic = new \XoopsModules\News\NewsTopic();
             $news_topic->setTopicPid($topicpid);
             $news_topic->setTopicTitle($one_amstopic['topic_title']);
             $news_topic->setTopicImgurl($one_amstopic['topic_imgurl']);
@@ -113,7 +112,7 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
 
             // Then we insert all its articles
             $result = $db->query('SELECT * FROM ' . $ams_articles . ' WHERE topicid=' . $ams_topicid . ' ORDER BY created');
-            while ($article = $db->fetchArray($result)) {
+            while (false !== ($article = $db->fetchArray($result))) {
                 $ams_newsid = $article['storyid'];
 
                 // We search for the last version
@@ -128,7 +127,7 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
                 $links = '';
                 if ($use_extlinks) {
                     $result7 = $db->query('SELECT * FROM ' . $ams_links . ' WHERE storyid=' . $ams_newsid . ' ORDER BY linkid');
-                    while ($link = $db->fetchArray($result7)) {
+                    while (false !== ($link = $db->fetchArray($result7))) {
                         if ('' == trim($links)) {
                             $links = "\n\n" . _AMS_NW_RELATEDARTICLES . "\n\n";
                         }
@@ -143,7 +142,7 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
                 }
 
                 // We create the story
-                $news = new NewsStory();
+                $news = new \XoopsModules\News\NewsStory();
                 $news->setUid($text_lastversion['uid']);
                 $news->setTitle($article['title']);
                 $news->created = $article['created'];
@@ -174,8 +173,8 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
 
                 // The files
                 $result4 = $db->query('SELECT * FROM ' . $ams_files . ' WHERE storyid=' . $ams_newsid);
-                while ($file = $db->fetchArray($result4)) {
-                    $sfile = new sFiles();
+                while (false !== ($file = $db->fetchArray($result4))) {
+                    $sfile = new \XoopsModules\News\Files();
                     $sfile->setFileRealName($file['filerealname']);
                     $sfile->setStoryid($news_newsid);
                     $sfile->date = $file['date'];
@@ -189,7 +188,7 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
 
                 // The ratings
                 $result5 = $db->query('SELECT * FROM ' . $ams_rating . ' WHERE storyid=' . $ams_newsid);
-                while ($ratings = $db->fetchArray($result5)) {
+                while (false !== ($ratings = $db->fetchArray($result5))) {
                     $result6 = $db->queryF('INSERT INTO '
                                            . $news_stories_votedata
                                            . ' (storyid, ratinguser, rating, ratinghostname, ratingtimestamp) VALUES ('
@@ -219,8 +218,8 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
 
                 // The notifications of this news
                 //$notifications =& $notificationHandler->getByItemId($ams_mid, $ams_newsid, 'ASC');
-                $criteria = new CriteriaCompo(new Criteria('not_modid', $ams_mid));
-                $criteria->add(new Criteria('not_itemid', $ams_newsid));
+                $criteria = new \CriteriaCompo(new \Criteria('not_modid', $ams_mid));
+                $criteria->add(new \Criteria('not_itemid', $ams_newsid));
                 $criteria->setOrder('ASC');
                 $notifications = $notificationHandler->getObjects($criteria);
                 if (is_array($notifications) && count($notifications) > 0) {
@@ -235,8 +234,8 @@ if (is_object($xoopsUser) && $xoopsUser->isAdmin($xoopsModule->mid())) {
             }
         }
         // Finally, import all the globals notifications
-        $criteria = new CriteriaCompo(new Criteria('not_modid', $ams_mid));
-        $criteria->add(new Criteria('not_category', 'global'));
+        $criteria = new \CriteriaCompo(new \Criteria('not_modid', $ams_mid));
+        $criteria->add(new \Criteria('not_category', 'global'));
         $criteria->setOrder('ASC');
         $notifications = $notificationHandler->getObjects($criteria);
         if (is_array($notifications) && count($notifications) > 0) {

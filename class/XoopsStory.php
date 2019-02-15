@@ -1,4 +1,5 @@
-<?php
+<?php namespace XoopsModules\News;
+
 /**
  * XOOPS news story
  *
@@ -17,15 +18,15 @@
  * @deprecated
  */
 
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 //$GLOBALS['xoopsLogger']->addDeprecated("'/class/xoopsstory.php' is deprecated since XOOPS 2.5.4, please create your own class instead.");
-require_once XOOPS_ROOT_PATH . '/modules/news/class/xoopstopic.php';
+// require_once XOOPS_ROOT_PATH . '/modules/news/class/xoopstopic.php';
 require_once XOOPS_ROOT_PATH . '/kernel/user.php';
 
 /**
- * Class MyXoopsStory
+ * Class XoopsStory
  */
-class MyXoopsStory
+class XoopsStory
 {
     public $table;
     public $storyid;
@@ -56,12 +57,13 @@ class MyXoopsStory
      */
     public function Story($storyid = -1)
     {
-        $this->db          = XoopsDatabaseFactory::getDatabaseConnection();
+        /** @var \XoopsMySQLDatabase $this->db */
+        $this->db          = \XoopsDatabaseFactory::getDatabaseConnection();
         $this->table       = '';
         $this->topicstable = '';
         if (is_array($storyid)) {
             $this->makeStory($storyid);
-        } elseif ($storyid != -1) {
+        } elseif (-1 != $storyid) {
             $this->getStory((int)$storyid);
         }
     }
@@ -218,7 +220,7 @@ class MyXoopsStory
     public function store($approved = false)
     {
         //$newpost = 0;
-        $myts     = MyTextSanitizer::getInstance();
+        $myts     = \MyTextSanitizer::getInstance();
         $title    = $myts->censorString($this->title);
         $hometext = $myts->censorString($this->hometext);
         $bodytext = $myts->censorString($this->bodytext);
@@ -245,7 +247,7 @@ class MyXoopsStory
             $published  = $this->approved ? $this->published : 0;
 
             $sql = sprintf(
-                "INSERT INTO %s (storyid, uid, title, created, published, expired, hostname, nohtml, nosmiley, hometext, bodytext, counter, topicid, ihome, notifypub, story_type, topicdisplay, topicalign, comments) VALUES (%u, %u, '%s', %u, %u, %u, '%s', %u, %u, '%s', '%s', %u, %u, %u, %u, '%s', %u, '%s', %u)",
+                "INSERT INTO `%s` (storyid, uid, title, created, published, expired, hostname, nohtml, nosmiley, hometext, bodytext, counter, topicid, ihome, notifypub, story_type, topicdisplay, topicalign, comments) VALUES (%u, %u, '%s', %u, %u, %u, '%s', %u, %u, '%s', '%s', %u, %u, %u, %u, '%s', %u, '%s', %u)",
                            $this->table,
                 $newstoryid,
                 $this->uid,
@@ -270,7 +272,7 @@ class MyXoopsStory
         } else {
             if ($this->approved) {
                 $sql = sprintf(
-                    "UPDATE %s SET title = '%s', published = %u, expired = %u, nohtml = %u, nosmiley = %u, hometext = '%s', bodytext = '%s', topicid = %u, ihome = %u, topicdisplay = %u, topicalign = '%s', comments = %u WHERE storyid = %u",
+                    "UPDATE `%s` SET title = '%s', published = %u, expired = %u, nohtml = %u, nosmiley = %u, hometext = '%s', bodytext = '%s', topicid = %u, ihome = %u, topicdisplay = %u, topicalign = '%s', comments = %u WHERE storyid = %u",
                     $this->table,
                     $title,
                     $this->published,
@@ -288,7 +290,7 @@ class MyXoopsStory
                 );
             } else {
                 $sql = sprintf(
-                    "UPDATE %s SET title = '%s', expired = %u, nohtml = %u, nosmiley = %u, hometext = '%s', bodytext = '%s', topicid = %u, ihome = %u, topicdisplay = %u, topicalign = '%s', comments = %u WHERE storyid = %u",
+                    "UPDATE `%s` SET title = '%s', expired = %u, nohtml = %u, nosmiley = %u, hometext = '%s', bodytext = '%s', topicid = %u, ihome = %u, topicdisplay = %u, topicalign = '%s', comments = %u WHERE storyid = %u",
                     $this->table,
                     $title,
                     $expired,
@@ -343,7 +345,7 @@ class MyXoopsStory
      */
     public function delete()
     {
-        $sql = sprintf('DELETE FROM %s WHERE storyid = %u', $this->table, $this->storyid);
+        $sql = sprintf('DELETE FROM `%s` WHERE storyid = %u', $this->table, $this->storyid);
         if (!$result = $this->db->query($sql)) {
             return false;
         }
@@ -356,7 +358,7 @@ class MyXoopsStory
      */
     public function updateCounter()
     {
-        $sql = sprintf('UPDATE %s SET counter = counter+1 WHERE storyid = %u', $this->table, $this->storyid);
+        $sql = sprintf('UPDATE `%s` SET counter = counter+1 WHERE storyid = %u', $this->table, $this->storyid);
         if (!$result = $this->db->queryF($sql)) {
             return false;
         }
@@ -371,7 +373,7 @@ class MyXoopsStory
      */
     public function updateComments($total)
     {
-        $sql = sprintf('UPDATE %s SET comments = %u WHERE storyid = %u', $this->table, $total, $this->storyid);
+        $sql = sprintf('UPDATE `%s` SET comments = %u WHERE storyid = %u', $this->table, $total, $this->storyid);
         if (!$result = $this->db->queryF($sql)) {
             return false;
         }
@@ -385,11 +387,11 @@ class MyXoopsStory
     }
 
     /**
-     * @return MyXoopsTopic
+     * @return \XoopsModules\News\XoopsTopic
      */
     public function topic()
     {
-        return new MyXoopsTopic($this->topicstable, $this->topicid);
+        return new \XoopsModules\News\XoopsTopic($this->topicstable, $this->topicid);
     }
 
     public function uid()
@@ -402,7 +404,7 @@ class MyXoopsStory
      */
     public function uname()
     {
-        return XoopsUser::getUnameFromId($this->uid);
+        return \XoopsUser::getUnameFromId($this->uid);
     }
 
     /**
@@ -412,7 +414,7 @@ class MyXoopsStory
      */
     public function title($format = 'Show')
     {
-        $myts   = MyTextSanitizer::getInstance();
+        $myts   = \MyTextSanitizer::getInstance();
         $smiley = 1;
         if ($this->nosmiley()) {
             $smiley = 0;
@@ -438,7 +440,7 @@ class MyXoopsStory
      */
     public function hometext($format = 'Show')
     {
-        $myts   = MyTextSanitizer::getInstance();
+        $myts   = \MyTextSanitizer::getInstance();
         $html   = 1;
         $smiley = 1;
         $xcodes = 1;
@@ -473,7 +475,7 @@ class MyXoopsStory
      */
     public function bodytext($format = 'Show')
     {
-        $myts   = MyTextSanitizer::getInstance();
+        $myts   = \MyTextSanitizer::getInstance();
         $html   = 1;
         $smiley = 1;
         $xcodes = 1;

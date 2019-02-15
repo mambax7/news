@@ -1,4 +1,5 @@
-<?php
+<?php namespace XoopsModules\News;
+
 /**
  * XOOPS tree class
  *
@@ -16,7 +17,7 @@
  * @author              Kazumi Ono (http://www.myweb.ne.jp/, http://jp.xoops.org/)
  */
 
-defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+defined('XOOPS_ROOT_PATH') || die('Restricted access');
 
 /**
  * A tree structures with {@link XoopsObject}s as nodes
@@ -25,7 +26,7 @@ defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
  * @subpackage core
  * @author     Kazumi Ono <onokazu@xoops.org>
  */
-class MyXoopsObjectTree
+class ObjectTree
 {
     /**
      * @access private
@@ -237,7 +238,7 @@ class MyXoopsObjectTree
      * @param  string  $extra          extra content to add to the element
      * @param  string  $caption        optional caption for form element
      *
-     * @return XoopsFormSelect form element
+     * @return \XoopsFormSelect form element
      */
     public function makeSelectElement(
         $name,
@@ -250,7 +251,7 @@ class MyXoopsObjectTree
         $caption = ''
     ) {
         xoops_load('xoopsformselect');
-        $element = new XoopsFormSelect($caption, $name, $selected);
+        $element = new \XoopsFormSelect($caption, $name, $selected);
         $element->setExtra($extra);
 
         if (false !== (bool)$addEmptyOption) {
@@ -264,7 +265,7 @@ class MyXoopsObjectTree
     /**
      * Make options for a select box from
      *
-     * @param XoopsFormSelect $element     form element to receive tree values as options
+     * @param \XoopsFormSelect $element     form element to receive tree values as options
      * @param string          $fieldName   Name of the member variable from the node objects that
      *                                     should be used as the title for the options.
      * @param int             $key         ID of the object to display as the root of select options

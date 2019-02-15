@@ -23,31 +23,33 @@
  * This page is used to display a maps of the topics (with articles count)
  *
  * @package News
- * @author Herve Thouzard
- * @copyright (c) Herve Thouzard - http://www.herve-thouzard.com
+ * @author Hervé Thouzard
+ * @copyright (c) Hervé Thouzard - http://www.herve-thouzard.com
  */
-include __DIR__ . '/../../mainfile.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
-require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
+
+use XoopsModules\News;
+
+require_once dirname(dirname(__DIR__)) . '/mainfile.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
+//require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
 
 $GLOBALS['xoopsOption']['template_main'] = 'news_topics_directory.tpl';
 require_once XOOPS_ROOT_PATH . '/header.php';
 
-$myts = MyTextSanitizer::getInstance();
+$myts = \MyTextSanitizer::getInstance();
 
 $newscountbytopic = $tbl_topics = [];
 $perms            = '';
-$xt               = new NewsTopic();
-$restricted       = NewsUtility::getModuleOption('restrictindex');
+$xt               = new  \XoopsModules\News\NewsTopic();
+$restricted       = News\Utility::getModuleOption('restrictindex');
 if ($restricted) {
     global $xoopsUser;
     /** @var XoopsModuleHandler $moduleHandler */
     $moduleHandler = xoops_getHandler('module');
     $newsModule    = $moduleHandler->getByDirname('news');
     $groups        = is_object($xoopsUser) ? $xoopsUser->getGroups() : XOOPS_GROUP_ANONYMOUS;
-    $gpermHandler  = xoops_getHandler('groupperm');
-    $topics        = $gpermHandler->getItemIds('news_view', $groups, $newsModule->getVar('mid'));
+    $grouppermHandler  = xoops_getHandler('groupperm');
+    $topics        = $grouppermHandler->getItemIds('news_view', $groups, $newsModule->getVar('mid'));
     if (count($topics) > 0) {
         $topics = implode(',', $topics);
         $perms  = ' AND topic_id IN (' . $topics . ') ';
@@ -80,12 +82,12 @@ if (is_array($topics_arr) && count($topics_arr)) {
 }
 $xoopsTpl->assign('topics', $tbl_topics);
 
-$xoopsTpl->assign('advertisement', NewsUtility::getModuleOption('advertisement'));
+$xoopsTpl->assign('advertisement', News\Utility::getModuleOption('advertisement'));
 
 /**
  * Manage all the meta datas
  */
-NewsUtility::createMetaDatas();
+News\Utility::createMetaDatas();
 
 $xoopsTpl->assign('xoops_pagetitle', _AM_NEWS_TOPICS_DIRECTORY);
 $meta_description = _AM_NEWS_TOPICS_DIRECTORY . ' - ' . $xoopsModule->name('s');

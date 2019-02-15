@@ -1,160 +1,22 @@
-<?php
+<?php namespace XoopsModules\News;
 
 use WideImage\WideImage;
 use Xmf\Request;
-
-//require_once dirname(__DIR__) . '/include/common.php';
+use XoopsModules\News;
+use XoopsModules\News\Common;
 
 /**
- * Class NewsUtility
- */
-class NewsUtility extends XoopsObject
+ * Class Utility
+     */
+class Utility
 {
-    /**
-     * Function responsible for checking if a directory exists, we can also write in and create an index.html file
-     *
-     * @param string $folder The full path of the directory to check
-     *
-     * @return void
-     */
-    public static function createFolder($folder)
-    {
-        //        try {
-        //            if (!mkdir($folder) && !is_dir($folder)) {
-        //                throw new \RuntimeException(sprintf('Unable to create the %s directory', $folder));
-        //            } else {
-        //                file_put_contents($folder . '/index.html', '<script>history.go(-1);</script>');
-        //            }
-        //        }
-        //        catch (Exception $e) {
-        //            echo 'Caught exception: ', $e->getMessage(), "\n", '<br>';
-        //        }
-        try {
-            if (!file_exists($folder)) {
-                if (!mkdir($folder) && !is_dir($folder)) {
-                    throw new \RuntimeException(sprintf('Unable to create the %s directory', $folder));
-                } else {
-                    file_put_contents($folder . '/index.html', '<script>history.go(-1);</script>');
-                }
-            }
-        } catch (Exception $e) {
-            echo 'Caught exception: ', $e->getMessage(), "\n", '<br>';
-        }
-    }
+    use Common\VersionChecks; //checkVerXoops, checkVerPhp Traits
 
-    /**
-     * @param $file
-     * @param $folder
-     * @return bool
-     */
-    public static function copyFile($file, $folder)
-    {
-        return copy($file, $folder);
-        //        try {
-        //            if (!is_dir($folder)) {
-        //                throw new \RuntimeException(sprintf('Unable to copy file as: %s ', $folder));
-        //            } else {
-        //                return copy($file, $folder);
-        //            }
-        //        } catch (Exception $e) {
-        //            echo 'Caught exception: ', $e->getMessage(), "\n", "<br>";
-        //        }
-        //        return false;
-    }
+    use Common\ServerStats; // getServerStats Trait
 
-    /**
-     * @param $src
-     * @param $dst
-     */
-    public static function recurseCopy($src, $dst)
-    {
-        $dir = opendir($src);
-        //    @mkdir($dst);
-        while (false !== ($file = readdir($dir))) {
-            if (('.' !== $file) && ('..' !== $file)) {
-                if (is_dir($src . '/' . $file)) {
-                    self::recurseCopy($src . '/' . $file, $dst . '/' . $file);
-                } else {
-                    copy($src . '/' . $file, $dst . '/' . $file);
-                }
-            }
-        }
-        closedir($dir);
-    }
+    use Common\FilesManagement; // Files Management Trait
 
-    /**
-     *
-     * Verifies XOOPS version meets minimum requirements for this module
-     * @static
-     * @param XoopsModule $module
-     *
-     * @param null|string $requiredVer
-     * @return bool true if meets requirements, false if not
-     */
-    public static function checkVerXoops(XoopsModule $module = null, $requiredVer = null)
-    {
-        $moduleDirName = basename(dirname(__DIR__));
-        if (null === $module) {
-            $module = XoopsModule::getByDirname($moduleDirName);
-        }
-        xoops_loadLanguage('admin', $moduleDirName);
-        //check for minimum XOOPS version
-        $currentVer = substr(XOOPS_VERSION, 6); // get the numeric part of string
-        $currArray  = explode('.', $currentVer);
-        if (null === $requiredVer) {
-            $requiredVer = '' . $module->getInfo('min_xoops'); //making sure it's a string
-        }
-        $reqArray = explode('.', $requiredVer);
-        $success  = true;
-        foreach ($reqArray as $k => $v) {
-            if (isset($currArray[$k])) {
-                if ($currArray[$k] > $v) {
-                    break;
-                } elseif ($currArray[$k] == $v) {
-                    continue;
-                } else {
-                    $success = false;
-                    break;
-                }
-            } else {
-                if ((int)$v > 0) { // handles versions like x.x.x.0_RC2
-                    $success = false;
-                    break;
-                }
-            }
-        }
-
-        if (false === $success) {
-            $module->setErrors(sprintf(_AM_NEWS_ERROR_BAD_XOOPS, $requiredVer, $currentVer));
-        }
-
-        return $success;
-    }
-
-    /**
-     *
-     * Verifies PHP version meets minimum requirements for this module
-     * @static
-     * @param XoopsModule $module
-     *
-     * @return bool true if meets requirements, false if not
-     */
-    public static function checkVerPhp(XoopsModule $module)
-    {
-        xoops_loadLanguage('admin', $module->dirname());
-        // check for minimum PHP version
-        $success = true;
-        $verNum  = PHP_VERSION;
-        $reqVer  = $module->getInfo('min_php');
-        if (false !== $reqVer && '' !== $reqVer) {
-            if (version_compare($verNum, $reqVer, '<')) {
-                $module->setErrors(sprintf(_AM_NEWS_ERROR_BAD_PHP, $reqVer, $verNum));
-                $success = false;
-            }
-        }
-
-        return $success;
-    }
+    //--------------- Custom module methods -----------------------------
 
     /**
      * @param             $option
@@ -177,7 +39,7 @@ class NewsUtility extends XoopsObject
                 $retval = $xoopsModuleConfig[$option];
             }
         } else {
-            /** @var XoopsModuleHandler $moduleHandler */
+            /** @var \XoopsModuleHandler $moduleHandler */
             $moduleHandler = xoops_getHandler('module');
             $module        = $moduleHandler->getByDirname($repmodule);
             $configHandler = xoops_getHandler('config');
@@ -208,12 +70,12 @@ class NewsUtility extends XoopsObject
         $voteresult  = $xoopsDB->query($query);
         $votesDB     = $xoopsDB->getRowsNum($voteresult);
         $totalrating = 0;
-        while (list($rating) = $xoopsDB->fetchRow($voteresult)) {
+        while (false !== (list($rating) = $xoopsDB->fetchRow($voteresult))) {
             $totalrating += $rating;
         }
         $finalrating = $totalrating / $votesDB;
         $finalrating = number_format($finalrating, 4);
-        $sql         = sprintf('UPDATE %s SET rating = %u, votes = %u WHERE storyid = %u', $xoopsDB->prefix('news_stories'), $finalrating, $votesDB, $storyid);
+        $sql         = sprintf('UPDATE `%s` SET rating = %u, votes = %u WHERE storyid = %u', $xoopsDB->prefix('news_stories'), $finalrating, $votesDB, $storyid);
         $xoopsDB->queryF($sql);
     }
 
@@ -238,12 +100,12 @@ class NewsUtility extends XoopsObject
             return $tblperms[$permtype];
         }
 
-        /** @var XoopsModuleHandler $moduleHandler */
+        /** @var \XoopsModuleHandler $moduleHandler */
         $moduleHandler       = xoops_getHandler('module');
         $newsModule          = $moduleHandler->getByDirname('news');
         $groups              = is_object($xoopsUser) ? $xoopsUser->getGroups() : XOOPS_GROUP_ANONYMOUS;
-        $gpermHandler        = xoops_getHandler('groupperm');
-        $topics              = $gpermHandler->getItemIds($permtype, $groups, $newsModule->getVar('mid'));
+        $grouppermHandler        = xoops_getHandler('groupperm');
+        $topics              = $grouppermHandler->getItemIds($permtype, $groups, $newsModule->getVar('mid'));
         $tblperms[$permtype] = $topics;
 
         return $topics;
@@ -331,7 +193,7 @@ class NewsUtility extends XoopsObject
      * @param  string                                                                                                                         $width
      * @param  string                                                                                                                         $height
      * @param  string                                                                                                                         $supplemental
-     * @return bool|XoopsFormDhtmlTextArea|XoopsFormEditor|XoopsFormFckeditor|XoopsFormHtmlarea|XoopsFormTextArea|XoopsFormTinyeditorTextArea
+     * @return bool|\XoopsFormDhtmlTextArea|\XoopsFormEditor|\XoopsFormFckeditor|\XoopsFormHtmlarea|\XoopsFormTextArea|\XoopsFormTinyeditorTextArea
      */
     public static function getWysiwygForm($caption, $name, $value = '', $width = '100%', $height = '400px', $supplemental = '')
     {
@@ -347,7 +209,7 @@ class NewsUtility extends XoopsObject
         $editor_configs['editor'] = $editor_option;
 
         if (static::isX23()) {
-            $editor = new XoopsFormEditor($caption, $name, $editor_configs);
+            $editor = new \XoopsFormEditor($caption, $name, $editor_configs);
 
             return $editor;
         }
@@ -357,31 +219,31 @@ class NewsUtility extends XoopsObject
             case 'fckeditor':
                 if (is_readable(XOOPS_ROOT_PATH . '/class/fckeditor/formfckeditor.php')) {
                     require_once XOOPS_ROOT_PATH . '/class/fckeditor/formfckeditor.php';
-                    $editor = new XoopsFormFckeditor($caption, $name, $value);
+                    $editor = new \XoopsFormFckeditor($caption, $name, $value);
                 }
                 break;
 
             case 'htmlarea':
                 if (is_readable(XOOPS_ROOT_PATH . '/class/htmlarea/formhtmlarea.php')) {
                     require_once XOOPS_ROOT_PATH . '/class/htmlarea/formhtmlarea.php';
-                    $editor = new XoopsFormHtmlarea($caption, $name, $value);
+                    $editor = new \XoopsFormHtmlarea($caption, $name, $value);
                 }
                 break;
 
             case 'dhtmltextarea':
             case 'dhtml':
-                $editor = new XoopsFormDhtmlTextArea($caption, $name, $value, 10, 50, $supplemental);
+                $editor = new \XoopsFormDhtmlTextArea($caption, $name, $value, 10, 50, $supplemental);
                 break;
 
             case 'textarea':
-                $editor = new XoopsFormTextArea($caption, $name, $value);
+                $editor = new \XoopsFormTextArea($caption, $name, $value);
                 break;
 
             case 'tinyeditor':
             case 'tinymce':
                 if (is_readable(XOOPS_ROOT_PATH . '/class/xoopseditor/tinyeditor/formtinyeditortextarea.php')) {
                     require_once XOOPS_ROOT_PATH . '/class/xoopseditor/tinyeditor/formtinyeditortextarea.php';
-                    $editor = new XoopsFormTinyeditorTextArea([
+                    $editor = new \XoopsFormTinyeditorTextArea([
                                                                   'caption' => $caption,
                                                                   'name'    => $name,
                                                                   'value'   => $value,
@@ -394,7 +256,7 @@ class NewsUtility extends XoopsObject
             case 'koivi':
                 if (is_readable(XOOPS_ROOT_PATH . '/class/wysiwyg/formwysiwygtextarea.php')) {
                     require_once XOOPS_ROOT_PATH . '/class/wysiwyg/formwysiwygtextarea.php';
-                    $editor = new XoopsFormWysiwygTextArea($caption, $name, $value, $width, $height, '');
+                    $editor = new \XoopsFormWysiwygTextArea($caption, $name, $value, $width, $height, '');
                 }
                 break;
         }
@@ -433,8 +295,8 @@ class NewsUtility extends XoopsObject
     {
         global $xoopsConfig, $xoTheme, $xoopsTpl;
         $content = '';
-        $myts    = MyTextSanitizer::getInstance();
-        require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+        $myts    = \MyTextSanitizer::getInstance();
+//        require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
 
         /**
          * Firefox and Opera Navigation's Bar
@@ -449,10 +311,10 @@ class NewsUtility extends XoopsObject
 
             // Create chapters
             require_once XOOPS_ROOT_PATH . '/class/tree.php';
-            require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
-            $xt         = new NewsTopic();
+//            require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+            $xt         = new  \XoopsModules\News\NewsTopic();
             $allTopics  = $xt->getAllTopics(static::getModuleOption('restrictindex'));
-            $topic_tree = new XoopsObjectTree($allTopics, 'topic_id', 'topic_pid');
+            $topic_tree = new \XoopsObjectTree($allTopics, 'topic_id', 'topic_pid');
             $topics_arr = $topic_tree->getAllChild(0);
             foreach ($topics_arr as $onetopic) {
                 $content .= sprintf("<link rel=\"Chapter\" title=\"%s\" href=\"%s\">\n", $onetopic->topic_title(), XOOPS_URL . '/modules/news/index.php?storytopic=' . $onetopic->topic_id());
@@ -529,14 +391,15 @@ class NewsUtility extends XoopsObject
      */
     public static function createMetaKeywords($content)
     {
-        include XOOPS_ROOT_PATH . '/modules/news/config.php';
-        require_once XOOPS_ROOT_PATH . '/modules/news/class/blacklist.php';
-        require_once XOOPS_ROOT_PATH . '/modules/news/class/registryfile.php';
+        global $cfg;
+        require_once XOOPS_ROOT_PATH . '/modules/news/config.php';
+        // require_once XOOPS_ROOT_PATH . '/modules/news/class/blacklist.php';
+        // require_once XOOPS_ROOT_PATH . '/modules/news/class/registryfile.php';
 
         if (!$cfg['meta_keywords_auto_generate']) {
             return '';
         }
-        $registry = new news_registryfile('news_metagen_options.txt');
+        $registry = new Registryfile('news_metagen_options.txt');
         //    $tcontent = '';
         $tcontent = $registry->getfile();
         if ('' !== xoops_trim($tcontent)) {
@@ -548,7 +411,7 @@ class NewsUtility extends XoopsObject
 
         $tmp = [];
         // Search for the "Minimum keyword length"
-        if (isset($_SESSION['news_keywords_limit'])) {
+        if (\Xmf\Request::hasVar('news_keywords_limit', 'SESSION')) {
             $limit = $_SESSION['news_keywords_limit'];
         } else {
             $configHandler                   = xoops_getHandler('config');
@@ -556,7 +419,7 @@ class NewsUtility extends XoopsObject
             $limit                           = $xoopsConfigSearch['keyword_min'];
             $_SESSION['news_keywords_limit'] = $limit;
         }
-        $myts            = MyTextSanitizer::getInstance();
+        $myts            = \MyTextSanitizer::getInstance();
         $content         = str_replace('<br>', ' ', $content);
         $content         = $myts->undoHtmlSpecialChars($content);
         $content         = strip_tags($content);
@@ -637,7 +500,7 @@ class NewsUtility extends XoopsObject
                 break;
         }
         // Remove black listed words
-        $metablack = new news_blacklist();
+        $metablack = new Blacklist();
         $words     = $metablack->getAllKeywords();
         $keywords  = $metablack->remove_blacklisted($keywords);
 
@@ -678,7 +541,7 @@ class NewsUtility extends XoopsObject
         require_once XOOPS_ROOT_PATH . '/class/template.php';
         $tplfileHandler = xoops_getHandler('tplfile');
         $tpllist        = $tplfileHandler->find(null, null, null, $folder);
-        $xoopsTpl       = new XoopsTpl();
+        $xoopsTpl       = new \XoopsTpl();
         xoops_template_clear_module_cache($xoopsModule->getVar('mid')); // Clear module's blocks cache
 
         // Remove cache for each page.
@@ -773,7 +636,7 @@ class NewsUtility extends XoopsObject
     /**
      * Verify if the current "user" is a bot or not
      *
-     * If you have a problem with this function, insert the folowing code just before the line if (isset($_SESSION['news_cache_bot'])) { :
+     * If you have a problem with this function, insert the folowing code just before the line if (\Xmf\Request::hasVar('news_cache_bot', 'SESSION'))) { :
      * return false;
      *
      * @package       News
@@ -782,7 +645,7 @@ class NewsUtility extends XoopsObject
      */
     public static function isBot()
     {
-        if (isset($_SESSION['news_cache_bot'])) {
+        if (\Xmf\Request::hasVar('news_cache_bot', 'SESSION')) {
             return $_SESSION['news_cache_bot'];
         } else {
             // Add here every bot you know separated by a pipe | (not matter with the upper or lower cases)
@@ -817,7 +680,7 @@ class NewsUtility extends XoopsObject
     {
         $infotips = static::getModuleOption('infotips');
         if ($infotips > 0) {
-            $myts = MyTextSanitizer::getInstance();
+            $myts = \MyTextSanitizer::getInstance();
 
             return $myts->htmlSpecialChars(xoops_substr(strip_tags($text), 0, $infotips));
         }

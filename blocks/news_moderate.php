@@ -17,32 +17,33 @@
  * @author         XOOPS Development Team
  */
 
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+use XoopsModules\News;
+
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 
 /**
  * Dispay a block where news moderators can show news that need to be moderated.
  */
 function b_news_topics_moderate()
 {
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
-    require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
+    // require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newsstory.php';
     $block      = [];
-    $dateformat = NewsUtility::getModuleOption('dateformat');
-    $infotips   = NewsUtility::getModuleOption('infotips');
+    $dateformat = News\Utility::getModuleOption('dateformat');
+    $infotips   = News\Utility::getModuleOption('infotips');
 
-    $storyarray = NewsStory:: getAllSubmitted(0, true, NewsUtility::getModuleOption('restrictindex'));
+    $storyarray = \XoopsModules\News\NewsStory:: getAllSubmitted(0, true, News\Utility::getModuleOption('restrictindex'));
     if (count($storyarray) > 0) {
         $block['lang_story_title']  = _MB_TITLE;
         $block['lang_story_date']   = _MB_POSTED;
         $block['lang_story_author'] = _MB_POSTER;
         $block['lang_story_action'] = _MB_ACTION;
         $block['lang_story_topic']  = _MB_TOPIC;
-        $myts                       = MyTextSanitizer::getInstance();
+        $myts                       = \MyTextSanitizer::getInstance();
         foreach ($storyarray as $newstory) {
             $title     = $newstory->title();
             $htmltitle = '';
             if ($infotips > 0) {
-                $story['infotips'] = NewsUtility::makeInfotips($newstory->hometext());
+                $story['infotips'] = News\Utility::makeInfotips($newstory->hometext());
                 $htmltitle         = ' title="' . $story['infotips'] . '"';
             }
 
@@ -76,7 +77,7 @@ function b_news_topics_moderate_onthefly($options)
     $options = explode('|', $options);
     $block   =& b_news_topics_moderate($options);
 
-    $tpl = new XoopsTpl();
+    $tpl = new \XoopsTpl();
     $tpl->assign('block', $block);
     $tpl->display('db:news_block_moderate.tpl');
 }

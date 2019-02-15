@@ -1,4 +1,5 @@
-<?php
+<?php namespace XoopsModules\News;
+
 /**
  * ****************************************************************************
  * - Developers TEAM TDM Xoops - (https://xoops.org)
@@ -32,46 +33,19 @@
  * Version : 1.67 Tue 2012/02/13 22:29:36 : Timgno Exp $
  * ****************************************************************************
  */
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 
-if (!class_exists('XoopsPersistableObjectHandler')) {
-    require_once XOOPS_ROOT_PATH . '/kernel/object.php';
-}
 
 /**
- * Class news_topics
+ * Class newsnews_storiesHandler
  */
-class news_topics extends XoopsObject
-{
-    //Constructor
-    /**
-     *
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->initVar('topic_id', XOBJ_DTYPE_INT, null, false, 4);
-        $this->initVar('topic_pid', XOBJ_DTYPE_INT, null, false, 4);
-        $this->initVar('topic_title', XOBJ_DTYPE_TXTBOX, null, false);
-        $this->initVar('topic_imgurl', XOBJ_DTYPE_TXTBOX, null, false);
-        $this->initVar('menu', XOBJ_DTYPE_INT, null, false, 1);
-        $this->initVar('topic_frontpage', XOBJ_DTYPE_INT, null, false, 1);
-        $this->initVar('topic_rssurl', XOBJ_DTYPE_TXTBOX, null, false);
-        $this->initVar('topic_description', XOBJ_DTYPE_TXTAREA, null, false);
-        $this->initVar('topic_color', XOBJ_DTYPE_TXTBOX, null, false);
-    }
-}
-
-/**
- * Class newsnews_topicsHandler
- */
-class newsnews_topicsHandler extends XoopsPersistableObjectHandler
+class NewsStoriesHandler extends \XoopsPersistableObjectHandler
 {
     /**
-     * @param null|XoopsDatabase $db
+     * @param null|\XoopsDatabase $db
      */
-    public function __construct(XoopsDatabase $db)
+    public function __construct(\XoopsDatabase $db = null)
     {
-        parent::__construct($db, 'news_topics', 'news_topics', 'topic_id', 'topic_pid');
+        parent::__construct($db, 'news_stories', NewsStories::class, 'storyid', 'uid');
     }
 }

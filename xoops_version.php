@@ -17,12 +17,20 @@
  * @author         XOOPS Development Team
  */
 
-// defined('XOOPS_ROOT_PATH') || exit('Restricted access.');
+use XoopsModules\News;
+
+require_once __DIR__   . '/preloads/autoloader.php';
+/** @var News\Helper $helper */
+$helper = News\Helper::getInstance();
+$helper->loadLanguage('common');
+
+// defined('XOOPS_ROOT_PATH') || die('Restricted access');
 $moduleDirName = basename(__DIR__);
+$moduleDirNameUpper = strtoupper($moduleDirName);
 
 $modversion['version']       = 1.72;
-$modversion['module_status'] = 'Beta 2';
-$modversion['release_date']  = '2017/05/20';
+$modversion['module_status'] = 'Beta 3';
+$modversion['release_date']  = '2018/09/22';
 $modversion['name']          = _MI_NEWS_NAME;
 $modversion['description']   = _MI_NEWS_DESC;
 $modversion['credits']       = 'XOOPS Project, Christian, Pilou, Marco, <br>ALL the members of the Newbb Team, GIJOE, Zoullou, Mithrandir, <br>Setec Astronomy, Marcan, 5vision, Anne, Trabis, dhsoft, Mamba, Mage, Timgno';
@@ -43,7 +51,7 @@ $modversion['module_website_url']  = 'www.xoops.org/';
 $modversion['module_website_name'] = 'XOOPS';
 $modversion['author_website_url']  = 'https://xoops.org/';
 $modversion['author_website_name'] = 'XOOPS';
-$modversion['min_php']             = '5.5';
+$modversion['min_php']             = '5.6';
 $modversion['min_xoops']           = '2.5.9';
 $modversion['min_admin']           = '1.2';
 $modversion['min_db']              = ['mysql' => '5.5'];
@@ -206,8 +214,9 @@ if ($module) {
     } else {
         $groups = XOOPS_GROUP_ANONYMOUS;
     }
-    $gpermHandler = xoops_getHandler('groupperm');
-    if ($gpermHandler->checkRight('news_submit', 0, $groups, $module->getVar('mid'))) {
+    /** @var \XoopsGroupPermHandler $grouppermHandler */
+    $grouppermHandler = xoops_getHandler('groupperm');
+    if ($grouppermHandler->checkRight('news_submit', 0, $groups, $module->getVar('mid'))) {
         $cansubmit = 1;
     }
 }
@@ -220,7 +229,7 @@ global $xoopsDB, $xoopsUser, $xoopsConfig, $xoopsModule, $xoopsModuleConfig;
 if (is_object($xoopsModule) && $xoopsModule->getVar('dirname') == $modversion['dirname']
     && $xoopsModule->getVar('isactive')) {
     // 2) If there's no topics to display as sub menus we can go on
-    if (!isset($_SESSION['items_count']) || $_SESSION['items_count'] == -1) {
+    if (!isset($_SESSION['items_count']) || -1 == $_SESSION['items_count']) {
         $sql    = 'SELECT COUNT(*) AS cpt FROM ' . $xoopsDB->prefix('news_topics') . ' WHERE menu=1';
         $result = $xoopsDB->query($sql);
         list($count) = $xoopsDB->fetchRow($result);
@@ -230,15 +239,14 @@ if (is_object($xoopsModule) && $xoopsModule->getVar('dirname') == $modversion['d
     }
     if ($count > 0) {
         require_once XOOPS_ROOT_PATH . '/class/tree.php';
-        require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
-        require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
-        $xt         = new NewsTopic();
-        $allTopics  = $xt->getAllTopics(NewsUtility::getModuleOption('restrictindex'));
-        $topic_tree = new XoopsObjectTree($allTopics, 'topic_id', 'topic_pid');
+//        require_once XOOPS_ROOT_PATH . '/modules/news/class/class.newstopic.php';
+        $xt         = new  \XoopsModules\News\NewsTopic();
+        $allTopics  = $xt->getAllTopics(News\Utility::getModuleOption('restrictindex'));
+        $topic_tree = new \XoopsObjectTree($allTopics, 'topic_id', 'topic_pid');
         $topics_arr = $topic_tree->getAllChild(0);
         if ($module) {
             foreach ($topics_arr as $onetopic) {
-                if ($gpermHandler->checkRight('news_view', $onetopic->topic_id(), $groups, $xoopsModule->getVar('mid'))
+                if ($grouppermHandler->checkRight('news_view', $onetopic->topic_id(), $groups, $xoopsModule->getVar('mid'))
                     && $onetopic->menu()) {
                     $modversion['sub'][$i]['name'] = $onetopic->topic_title();
                     $modversion['sub'][$i]['url']  = 'index.php?storytopic=' . $onetopic->topic_id();
@@ -259,8 +267,8 @@ if ($cansubmit) {
 }
 unset($cansubmit);
 
-require_once XOOPS_ROOT_PATH . '/modules/news/class/utility.php';
-if (NewsUtility::getModuleOption('newsbythisauthor')) {
+//;
+if (News\Utility::getModuleOption('newsbythisauthor')) {
     ++$i;
     $modversion['sub'][$i]['name'] = _MI_NEWS_WHOS_WHO;
     $modversion['sub'][$i]['url']  = 'whoswho.php';
@@ -551,7 +559,7 @@ $modversion['config'][$i]['formtype']    = 'select';
 $modversion['config'][$i]['valuetype']   = 'text';
 $modversion['config'][$i]['default']     = 'dhtml';
 xoops_load('xoopseditorhandler');
-$editorHandler                       = XoopsEditorHandler::getInstance();
+$editorHandler                       = \XoopsEditorHandler::getInstance();
 $modversion['config'][$i]['options'] = array_flip($editorHandler->getList());
 
 /**
@@ -793,6 +801,19 @@ $modversion['config'][$i]['description'] = '_MI_NEWS_FACEBOOKCOMMENTS_DSC';
 $modversion['config'][$i]['formtype']    = 'yesno';
 $modversion['config'][$i]['valuetype']   = 'int';
 $modversion['config'][$i]['default']     = 0;
+
+/**
+ * Make Sample button visible?
+ */
+$modversion['config'][] = [
+    'name'        => 'displaySampleButton',
+        'title'       => '_MI_NEWS_SHOW_SAMPLE_BUTTON',
+        'description' => '_MI_NEWS_SHOW_SAMPLE_BUTTON_DESC',
+    'formtype'    => 'yesno',
+    'valuetype'   => 'int',
+    'default'     => 1,
+];
+
 
 // Notification
 $modversion['hasNotification']             = 1;
